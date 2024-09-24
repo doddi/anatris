@@ -14,8 +14,7 @@ hstack
     @Statistics
   vstack
     @LineCount
-    border [border_style: "thick"]
-      canvas [width: CANVAS_WIDTH, height: CANVAS_HEIGHT]
+    @GameArena
   vstack [width: CANVAS_WIDTH]
     @ScoreBoard
     @NextPiece

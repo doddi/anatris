@@ -1,16 +1,11 @@
 border
   hstack
     spacer
-    vstack
+    vstack [height: 5]
       hstack
         spacer
         text "NEXT"
         spacer
-      hstack [height: PIECE_HEIGHT]
-        spacer
-        vstack
-          spacer
-          text "S"
-          spacer
-        spacer
+      spacer
+      @Tetronimo [type: "I"]
     spacer

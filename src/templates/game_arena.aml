@@ -1,0 +1,2 @@
+border [border_style: "thick"]
+  canvas [width: CANVAS_WIDTH, height: CANVAS_HEIGHT]

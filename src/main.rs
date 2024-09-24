@@ -4,11 +4,13 @@ use anathema::prelude::*;
 use std::fs::read_to_string;
 use widgets::{
     game::{GameComponent, GameState},
+    game_arena::{GameArenaComponent, GameArenaState},
     game_type::{GameTypeComponent, GameTypeState},
     line_count::{LineCountComponent, LineCountState},
     next_piece::{NextPieceComponent, NextPieceState},
     scoreboard::{ScoreBoardComponent, ScoreBoardState},
     statistics::{StatisticsComponent, StatisticsState},
+    tetromino::{TetronimoComponent, TetronimoState},
 };
 
 fn main() {
@@ -76,6 +78,24 @@ fn main() {
             "src/templates/game_type.aml",
             GameTypeComponent {},
             GameTypeState {},
+        )
+        .unwrap();
+
+    runtime
+        .register_component(
+            "GameArena",
+            "src/templates/game_arena.aml",
+            GameArenaComponent {},
+            GameArenaState {},
+        )
+        .unwrap();
+
+    runtime
+        .register_prototype(
+            "Tetronimo",
+            "src/templates/tetronimo.aml",
+            || TetronimoComponent {},
+            || TetronimoState {},
         )
         .unwrap();
 

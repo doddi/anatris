@@ -1,0 +1,34 @@
+// Information taken from https://tetris.fandom.com/wiki/Tetromino
+hstack [height: PIECE_HEIGHT]
+  spacer
+  if type == "I"
+    vstack
+      text "🟦🟦🟦🟦"
+  else if type == "J"
+    vstack
+      text "🟪"
+      text "🟪🟪🟪"
+  else if type == "L"
+    vstack
+      text "    🟥"
+      text "🟥🟥🟥"
+  else if type == "O"
+    vstack
+      text "🟨🟨"
+      text "🟨🟨"
+  else if type == "S"
+    vstack
+      text "  🟩🟩"
+      text "🟩🟩"
+  else if type == "T"
+    vstack
+      text "  🟫"
+      text "🟫🟫🟫"
+  else if type == "Z"
+    vstack
+      text "🟧🟧"
+      text "  🟧🟧"
+  else
+    vstack
+      text "Unknown"
+  spacer
