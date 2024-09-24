@@ -1,0 +1,16 @@
+border
+  hstack
+    spacer
+    vstack
+      hstack
+        spacer
+        text "NEXT"
+        spacer
+      hstack [height: PIECE_HEIGHT]
+        spacer
+        vstack
+          spacer
+          text "S"
+          spacer
+        spacer
+    spacer

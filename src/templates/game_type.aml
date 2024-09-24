@@ -1,0 +1,5 @@
+border [background: THEME.level_bg, foreground: THEME.level_fg]
+  hstack
+    spacer
+    text "A-TYPE"
+    spacer

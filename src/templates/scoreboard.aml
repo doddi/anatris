@@ -1,0 +1,22 @@
+border
+  vstack
+    padding [padding: 1]
+      vstack
+        hstack
+          spacer
+          text [foreground: "red"] "TOP"
+          spacer
+        hstack
+          spacer
+          text "11111111"
+          spacer
+    padding [padding: 1]
+      vstack
+        hstack
+          spacer
+          text [foreground: "yellow"] "SCORE"
+          spacer
+        hstack
+          spacer
+          text "11111111"
+          spacer

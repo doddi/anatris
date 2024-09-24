@@ -1,0 +1,37 @@
+border
+  hstack
+    spacer
+    vstack
+      hstack [height: PIECE_HEIGHT]
+        spacer
+        text "STATISTICS"
+        spacer
+      hstack [height: PIECE_HEIGHT]
+        spacer
+        text "T"
+        spacer
+      hstack [height: PIECE_HEIGHT]
+        spacer
+        text "R"
+        spacer
+      hstack [height: PIECE_HEIGHT]
+        spacer
+        text "Z"
+        spacer
+      hstack [height: PIECE_HEIGHT]
+        spacer
+        text "O"
+        spacer
+      hstack [height: PIECE_HEIGHT]
+        spacer
+        text "S"
+        spacer
+      hstack [height: PIECE_HEIGHT]
+        spacer
+        text "L"
+        spacer
+      hstack [height: PIECE_HEIGHT]
+        spacer
+        text "|"
+        spacer
+    spacer
