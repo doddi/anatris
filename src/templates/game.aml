@@ -15,7 +15,7 @@ if visible
       @Statistics
     vstack
       @LineCount
-      @GameArena
+      @GameArena [paused: paused]
     vstack [width: CANVAS_WIDTH]
       @ScoreBoard
       @NextPiece

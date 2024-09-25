@@ -1,2 +1,3 @@
 border [border_style: "thick"]
+  // TODO: It would be nice to use the CANVAS_WIDTH from the parent widget so it can be dynamic
   canvas [width: CANVAS_WIDTH, height: CANVAS_HEIGHT]

@@ -1,16 +1,19 @@
 mod widgets;
 
 use anathema::{
-    component::{ComponentId, Event, KeyCode, KeyEvent},
+    backend::tui::events::CTKeyCode,
+    component::{ComponentId, KeyCode, KeyEvent},
     prelude::*,
 };
-use std::{collections::HashMap, default, fs::read_to_string};
+use std::fs::read_to_string;
 use widgets::{
     game::{GameComponent, GameComponentMessage, GameComponentState},
-    game_arena::GameArenaComponent,
+    game_arena::{
+        self, GameArenaComponent, GameArenaComponentMessage, GameArenaComponentState, MoveType,
+    },
     game_type::{GameTypeComponent, GameTypeState},
     line_count::{LineCountComponent, LineCountState},
-    main_menu::{self, MainMenuComponent, MainMenuComponentMessage, MainMenuComponentState},
+    main_menu::{MainMenuComponent, MainMenuComponentMessage, MainMenuComponentState},
     next_piece::{NextPieceComponent, NextPieceState},
     scoreboard::{ScoreBoardComponent, ScoreBoardState},
     static_piece::{StaticPieceComponent, StaticPieceState},
@@ -94,12 +97,12 @@ fn main() {
         )
         .unwrap();
 
-    runtime
+    let game_arena = runtime
         .register_component(
             "GameArena",
             "src/templates/game_arena.aml",
             GameArenaComponent::new(),
-            (),
+            GameArenaComponentState::new(),
         )
         .unwrap();
 
@@ -112,7 +115,8 @@ fn main() {
         )
         .unwrap();
 
-    let runtime = runtime.set_global_event_handler(GameStateManagement::new(&main_menu, &game));
+    let runtime =
+        runtime.set_global_event_handler(GameStateManagement::new(&main_menu, &game, &game_arena));
     runtime.finish().unwrap().run();
 }
 
@@ -129,6 +133,7 @@ struct GameStateManagement<'a> {
     state: GameState,
     main_menu: &'a ComponentId<MainMenuComponentMessage>,
     game: &'a ComponentId<GameComponentMessage>,
+    game_arena: &'a ComponentId<GameArenaComponentMessage>,
 }
 
 impl<'a> GlobalEvents for GameStateManagement<'a> {
@@ -138,6 +143,10 @@ impl<'a> GlobalEvents for GameStateManagement<'a> {
         _elements: &mut anathema::widgets::Elements<'_, '_>,
         ctx: &mut GlobalContext<'_>,
     ) -> Option<anathema::component::Event> {
+        if let Some(exit) = self.check_for_exit(&event) {
+            return Some(exit);
+        }
+
         match self.state {
             GameState::MainMenu => self.handle_main_menu(event, ctx),
             GameState::Paused => self.handle_pause(event, ctx),
@@ -151,16 +160,35 @@ impl<'a> GameStateManagement<'a> {
     fn new(
         main_menu: &'a ComponentId<MainMenuComponentMessage>,
         game: &'a ComponentId<GameComponentMessage>,
+        game_arena: &'a ComponentId<GameArenaComponentMessage>,
     ) -> Self {
         Self {
             state: GameState::default(),
             main_menu,
             game,
+            game_arena,
         }
     }
 
-    fn handle_main_menu(
+    fn check_for_exit(
         &self,
+        event: &anathema::component::Event,
+    ) -> Option<anathema::component::Event> {
+        if let anathema::component::Event::Key(key_event) = event {
+            let KeyEvent {
+                code,
+                ctrl: _,
+                state: _,
+            } = key_event;
+            if let KeyCode::CtrlC = code {
+                return Some(anathema::component::Event::Stop);
+            }
+        }
+        None
+    }
+
+    fn handle_main_menu(
+        &mut self,
         event: anathema::component::Event,
         ctx: &mut GlobalContext<'_>,
     ) -> Option<anathema::component::Event> {
@@ -171,32 +199,75 @@ impl<'a> GameStateManagement<'a> {
                     ctrl: _,
                     state: _,
                 } = keyevent;
-                {
-                    if let KeyCode::Enter = code {
-                        ctx.emit(*self.main_menu, MainMenuComponentMessage::Invisible);
-                        ctx.emit(*self.game, GameComponentMessage::Visible);
-                    }
-                    None
+                if let KeyCode::Enter = code {
+                    ctx.emit(*self.main_menu, MainMenuComponentMessage::Invisible);
+                    ctx.emit(*self.game, GameComponentMessage::Visible);
+                    self.state = GameState::Playing;
                 }
             }
-            _ => None,
+            _ => (),
         }
+        None
     }
 
     fn handle_pause(
-        &self,
+        &mut self,
         event: anathema::component::Event,
         ctx: &mut GlobalContext,
     ) -> Option<anathema::component::Event> {
-        todo!()
+        match event {
+            anathema::component::Event::Key(keyevent) => {
+                let KeyEvent {
+                    code,
+                    ctrl: _,
+                    state: _,
+                } = keyevent;
+
+                if let KeyCode::Esc = code {
+                    ctx.emit(*self.game, GameComponentMessage::Running);
+                    self.state = GameState::Playing;
+                } else if let KeyCode::Enter = code {
+                    ctx.emit(*self.main_menu, MainMenuComponentMessage::Visible);
+                    ctx.emit(*self.game, GameComponentMessage::Invisible);
+                    self.state = GameState::MainMenu;
+                }
+            }
+            _ => (),
+        }
+        None
     }
 
     fn handle_playing(
-        &self,
+        &mut self,
         event: anathema::component::Event,
         ctx: &mut GlobalContext,
     ) -> Option<anathema::component::Event> {
-        todo!()
+        if let anathema::component::Event::Key(keyevent) = event {
+            let KeyEvent {
+                code,
+                ctrl: _,
+                state: _,
+            } = keyevent;
+
+            match code {
+                KeyCode::Esc => {
+                    ctx.emit(*self.game, GameComponentMessage::Paused);
+                    self.state = GameState::Paused;
+                }
+                KeyCode::Char(' ') => ctx.emit(*self.game_arena, GameArenaComponentMessage::Rotate),
+                KeyCode::Char('a') => ctx.emit(
+                    *self.game_arena,
+                    GameArenaComponentMessage::Move(MoveType::Left),
+                ),
+                KeyCode::Char('d') => ctx.emit(
+                    *self.game_arena,
+                    GameArenaComponentMessage::Move(MoveType::Right),
+                ),
+                KeyCode::Char('s') => ctx.emit(*self.game_arena, GameArenaComponentMessage::Drop),
+                _ => (),
+            }
+        }
+        None
     }
 
     fn handle_game_over(

@@ -5,6 +5,7 @@ use anathema::{
     component::{Component, Context},
     default_widgets::Canvas,
     geometry::LocalPos,
+    state::{State, Value},
     widgets::Elements,
 };
 use rand::{
@@ -12,10 +13,44 @@ use rand::{
     Rng,
 };
 
-pub(crate) struct GameArenaComponent {
-    last_update: Duration,
+const GLYPH_WIDTH: u16 = 2;
 
+#[derive(State)]
+pub(crate) struct GameArenaComponentState {
+    paused: Value<bool>,
+}
+
+impl GameArenaComponentState {
+    pub(crate) fn new() -> Self {
+        Self {
+            paused: Value::new(false),
+        }
+    }
+}
+
+#[derive(PartialEq, Eq)]
+pub(crate) enum MoveType {
+    None,
+    Left,
+    Right,
+}
+
+pub(crate) enum GameArenaComponentMessage {
+    Rotate,
+    Drop,
+    Move(MoveType),
+}
+
+pub(crate) struct GameArenaComponent {
+    last_fall_update: Duration,
+    last_move_update: Duration,
+
+    move_type: MoveType,
     position: LocalPos,
+    new_position: LocalPos,
+
+    rotate: bool,
+
     piece: Tetronimo,
     pieces: Vec<char>,
 }
@@ -23,8 +58,15 @@ pub(crate) struct GameArenaComponent {
 impl GameArenaComponent {
     pub(crate) fn new() -> Self {
         Self {
-            last_update: Duration::ZERO,
+            last_fall_update: Duration::ZERO,
+            last_move_update: Duration::ZERO,
+
+            move_type: MoveType::None,
             position: LocalPos::ZERO,
+            new_position: LocalPos::ZERO,
+
+            rotate: false,
+
             piece: Tetronimo::new(),
             // pieces: Vec::new(),
             pieces: GameArenaComponent::initialise_arena(),
@@ -63,7 +105,7 @@ impl GameArenaComponent {
         let (_character, shape, width) = self.piece.get_chars();
         shape.iter().enumerate().for_each(|(offset, present)| {
             if *present {
-                let x = ((offset % width) as u16) * 2;
+                let x = ((offset % width) as u16) * GLYPH_WIDTH;
                 let y = (offset / width) as u16;
                 let mut local_pos = LocalPos::new(x, y);
                 canvas.erase(local_pos + self.position);
@@ -75,17 +117,27 @@ impl GameArenaComponent {
 
     fn draw_arena(&self, canvas: &mut Canvas) {
         self.pieces.iter().enumerate().for_each(|(offset, piece)| {
-            let x = ((offset % 20) * 2) as u16;
+            let x = ((offset % 20) * GLYPH_WIDTH as usize) as u16;
             let y = (offset / 2) as u16;
             let local_pos = LocalPos::new(x, y);
             canvas.put(*piece, Style::reset(), local_pos);
         });
     }
+
+    fn move_left(&mut self) {
+        if self.position.x >= GLYPH_WIDTH {
+            self.new_position.x -= GLYPH_WIDTH;
+        }
+    }
+
+    fn move_right(&mut self) {
+        self.new_position.x += GLYPH_WIDTH;
+    }
 }
 
 impl Component for GameArenaComponent {
-    type State = ();
-    type Message = ();
+    type State = GameArenaComponentState;
+    type Message = GameArenaComponentMessage;
 
     fn tick(
         &mut self,
@@ -94,20 +146,87 @@ impl Component for GameArenaComponent {
         _context: Context<'_, Self::State>,
         dt: Duration,
     ) {
-        self.last_update += dt;
-        if self.last_update >= Duration::from_secs(1) {
-            self.last_update = Duration::ZERO;
+        let is_paused = extract_bool_attribute(_context, "paused");
+        match is_paused {
+            Some(true) => (),
+            _ => {
+                let mut should_rotate = false;
+                self.last_fall_update += dt;
+                self.last_move_update += dt;
 
-            elements.by_tag("canvas").first(|el, _| {
-                let canvas = el.to::<Canvas>();
+                if self.last_move_update >= Duration::from_millis(200) {
+                    self.last_move_update = Duration::ZERO;
+                    self.new_position = self.position;
+                    match self.move_type {
+                        MoveType::None => (),
+                        MoveType::Left => self.move_left(),
+                        MoveType::Right => self.move_right(),
+                    }
+                    self.move_type = MoveType::None;
 
-                self.draw_arena(canvas);
-                self.clear_tetronimo(canvas);
-                self.position.y += 1;
-                self.piece.rotation = self.piece.rotation.clockwise();
-                self.draw_tetronimo(canvas);
-            });
+                    if self.rotate {
+                        self.rotate = false;
+                        should_rotate = true;
+                    }
+                }
+
+                if self.last_fall_update >= Duration::from_secs(1) {
+                    self.last_fall_update = Duration::ZERO;
+                    self.new_position.y += 1;
+                }
+
+                elements.by_tag("canvas").first(|el, _| {
+                    let canvas = el.to::<Canvas>();
+
+                    self.draw_arena(canvas);
+                    self.clear_tetronimo(canvas);
+                    self.position = self.new_position;
+                    if should_rotate {
+                        self.piece.rotation = self.piece.rotation.clockwise();
+                    }
+                    self.draw_tetronimo(canvas);
+                });
+            }
         }
+    }
+
+    fn message(
+        &mut self,
+        message: Self::Message,
+        _state: &mut Self::State,
+        mut _elements: Elements<'_, '_>,
+        mut _context: Context<'_, Self::State>,
+    ) {
+        match message {
+            GameArenaComponentMessage::Move(move_type) => {
+                if self.move_type == MoveType::None {
+                    match move_type {
+                        MoveType::Left => self.move_type = MoveType::Left,
+                        MoveType::Right => self.move_type = MoveType::Right,
+                        MoveType::None => todo!(),
+                    }
+                }
+            }
+            GameArenaComponentMessage::Rotate => self.rotate = true,
+            GameArenaComponentMessage::Drop => todo!(),
+        }
+    }
+}
+
+fn extract_bool_attribute(
+    context: Context<GameArenaComponentState>,
+    attribute: &str,
+) -> Option<bool> {
+    let either = context.get_external(attribute);
+    match either {
+        Some(either) => match either {
+            anathema::widgets::expressions::Either::Static(value) => Some(value.to_bool()),
+            anathema::widgets::expressions::Either::Dyn(value) => match value.to_common() {
+                Some(value) => Some(value.to_bool()),
+                _ => None,
+            },
+        },
+        _ => None,
     }
 }
 
