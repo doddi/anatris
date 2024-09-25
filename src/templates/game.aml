@@ -1,7 +1,5 @@
-let CANVAS_WIDTH=40
-let CANVAS_HEIGHT=40
-let PIECE_WIDTH=6
-let PIECE_HEIGHT=3
+let CANVAS_WIDTH=20
+let CANVAS_HEIGHT=20
 let THEME = {
   level_bg: "cyan",
   level_fg: "red",

@@ -1,7 +1,7 @@
+mod core;
 mod widgets;
 
 use anathema::{
-    backend::tui::events::CTKeyCode,
     component::{ComponentId, KeyCode, KeyEvent},
     prelude::*,
 };
@@ -9,7 +9,7 @@ use std::fs::read_to_string;
 use widgets::{
     game::{GameComponent, GameComponentMessage, GameComponentState},
     game_arena::{
-        self, GameArenaComponent, GameArenaComponentMessage, GameArenaComponentState, MoveType,
+        GameArenaComponent, GameArenaComponentMessage, GameArenaComponentState, MoveType,
     },
     game_type::{GameTypeComponent, GameTypeState},
     line_count::{LineCountComponent, LineCountState},
