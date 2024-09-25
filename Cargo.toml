@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 # anathema = { path = "../anathema" }
 anathema = { git = "https://github.com/togglebyte/anathema/", branch = "dev" }
+rand = "0.8"
