@@ -1,34 +1,27 @@
 // Information taken from https://tetris.fandom.com/wiki/Tetromino
 hstack [height: PIECE_HEIGHT]
   spacer
-  if type == "I"
-    vstack
+  vstack
+    if type == "I"
       text "🟦🟦🟦🟦"
-  else if type == "J"
-    vstack
+    else if type == "J"
       text "🟪"
       text "🟪🟪🟪"
-  else if type == "L"
-    vstack
+    else if type == "L"
       text "    🟥"
       text "🟥🟥🟥"
-  else if type == "O"
-    vstack
+    else if type == "O"
       text "🟨🟨"
       text "🟨🟨"
-  else if type == "S"
-    vstack
+    else if type == "S"
       text "  🟩🟩"
       text "🟩🟩"
-  else if type == "T"
-    vstack
+    else if type == "T"
       text "  🟫"
       text "🟫🟫🟫"
-  else if type == "Z"
-    vstack
+    else if type == "Z"
       text "🟧🟧"
       text "  🟧🟧"
-  else
-    vstack
+    else
       text "Unknown"
   spacer

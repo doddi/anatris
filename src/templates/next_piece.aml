@@ -7,5 +7,5 @@ border
         text "NEXT"
         spacer
       spacer
-      @Tetronimo [type: "I"]
+      @StaticPiece [type: "I"]
     spacer

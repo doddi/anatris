@@ -7,17 +7,18 @@ let THEME = {
   level_fg: "red",
 }
 
-hstack
-  spacer
-  vstack [width: CANVAS_WIDTH]
-    @GameType
-    @Statistics
-  vstack
-    @LineCount
-    @GameArena
-  vstack [width: CANVAS_WIDTH]
-    @ScoreBoard
-    @NextPiece
-  spacer
+if visible
+  hstack
+    spacer
+    vstack [width: CANVAS_WIDTH]
+      @GameType
+      @Statistics
+    vstack
+      @LineCount
+      @GameArena
+    vstack [width: CANVAS_WIDTH]
+      @ScoreBoard
+      @NextPiece
+    spacer
 
 

@@ -1,16 +1,20 @@
 mod widgets;
 
-use anathema::prelude::*;
-use std::fs::read_to_string;
+use anathema::{
+    component::{ComponentId, Event, KeyCode, KeyEvent},
+    prelude::*,
+};
+use std::{collections::HashMap, default, fs::read_to_string};
 use widgets::{
-    game::{GameComponent, GameState},
-    game_arena::{GameArenaComponent, GameArenaState},
+    game::{GameComponent, GameComponentMessage, GameComponentState},
+    game_arena::GameArenaComponent,
     game_type::{GameTypeComponent, GameTypeState},
     line_count::{LineCountComponent, LineCountState},
+    main_menu::{self, MainMenuComponent, MainMenuComponentMessage, MainMenuComponentState},
     next_piece::{NextPieceComponent, NextPieceState},
     scoreboard::{ScoreBoardComponent, ScoreBoardState},
+    static_piece::{StaticPieceComponent, StaticPieceState},
     statistics::{StatisticsComponent, StatisticsState},
-    tetromino::{TetronimoComponent, TetronimoState},
 };
 
 fn main() {
@@ -27,12 +31,21 @@ fn main() {
 
     let mut runtime = Runtime::builder(doc, backend);
 
-    runtime
+    let main_menu = runtime
+        .register_component(
+            "MainMenu",
+            "src/templates/main_menu.aml",
+            MainMenuComponent {},
+            MainMenuComponentState::new(),
+        )
+        .unwrap();
+
+    let game = runtime
         .register_component(
             "Game",
             "src/templates/game.aml",
             GameComponent {},
-            GameState {},
+            GameComponentState::new(),
         )
         .unwrap();
 
@@ -85,19 +98,112 @@ fn main() {
         .register_component(
             "GameArena",
             "src/templates/game_arena.aml",
-            GameArenaComponent {},
-            GameArenaState {},
+            GameArenaComponent::new(),
+            (),
         )
         .unwrap();
 
     runtime
         .register_prototype(
-            "Tetronimo",
-            "src/templates/tetronimo.aml",
-            || TetronimoComponent {},
-            || TetronimoState {},
+            "StaticPiece",
+            "src/templates/static_piece.aml",
+            || StaticPieceComponent {},
+            || StaticPieceState {},
         )
         .unwrap();
 
+    let runtime = runtime.set_global_event_handler(GameStateManagement::new(&main_menu, &game));
     runtime.finish().unwrap().run();
+}
+
+#[derive(Default)]
+enum GameState {
+    #[default]
+    MainMenu,
+    Paused,
+    Playing,
+    GameOver,
+}
+
+struct GameStateManagement<'a> {
+    state: GameState,
+    main_menu: &'a ComponentId<MainMenuComponentMessage>,
+    game: &'a ComponentId<GameComponentMessage>,
+}
+
+impl<'a> GlobalEvents for GameStateManagement<'a> {
+    fn handle(
+        &mut self,
+        event: anathema::component::Event,
+        _elements: &mut anathema::widgets::Elements<'_, '_>,
+        ctx: &mut GlobalContext<'_>,
+    ) -> Option<anathema::component::Event> {
+        match self.state {
+            GameState::MainMenu => self.handle_main_menu(event, ctx),
+            GameState::Paused => self.handle_pause(event, ctx),
+            GameState::Playing => self.handle_playing(event, ctx),
+            GameState::GameOver => self.handle_game_over(event, ctx),
+        }
+    }
+}
+
+impl<'a> GameStateManagement<'a> {
+    fn new(
+        main_menu: &'a ComponentId<MainMenuComponentMessage>,
+        game: &'a ComponentId<GameComponentMessage>,
+    ) -> Self {
+        Self {
+            state: GameState::default(),
+            main_menu,
+            game,
+        }
+    }
+
+    fn handle_main_menu(
+        &self,
+        event: anathema::component::Event,
+        ctx: &mut GlobalContext<'_>,
+    ) -> Option<anathema::component::Event> {
+        match event {
+            anathema::component::Event::Key(keyevent) => {
+                let KeyEvent {
+                    code,
+                    ctrl: _,
+                    state: _,
+                } = keyevent;
+                {
+                    if let KeyCode::Enter = code {
+                        ctx.emit(*self.main_menu, MainMenuComponentMessage::Invisible);
+                        ctx.emit(*self.game, GameComponentMessage::Visible);
+                    }
+                    None
+                }
+            }
+            _ => None,
+        }
+    }
+
+    fn handle_pause(
+        &self,
+        event: anathema::component::Event,
+        ctx: &mut GlobalContext,
+    ) -> Option<anathema::component::Event> {
+        todo!()
+    }
+
+    fn handle_playing(
+        &self,
+        event: anathema::component::Event,
+        ctx: &mut GlobalContext,
+    ) -> Option<anathema::component::Event> {
+        todo!()
+    }
+
+    fn handle_game_over(
+        &self,
+        event: anathema::component::Event,
+        ctx: &mut GlobalContext,
+    ) -> Option<anathema::component::Event> {
+        todo!()
+    }
 }

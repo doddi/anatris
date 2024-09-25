@@ -7,5 +7,5 @@ border
         text "STATISTICS"
         spacer
       for type in ["I", "J", "L", "O", "S", "T", "Z"]
-        @Tetronimo [type: type]
+        @StaticPiece [type: type]
     spacer
