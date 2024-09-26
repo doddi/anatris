@@ -1,0 +1,16 @@
+               AAA                                                            tttt                                iiii                   
+              A:::A                                                        ttt:::t                               i::::i                  
+             A:::::A                                                       t:::::t                                iiii                   
+            A:::::::A                                                      t:::::t                                                       
+           A:::::::::A           nnnn  nnnnnnnn      aaaaaaaaaaaaa   ttttttt:::::ttttttt    rrrrr   rrrrrrrrr   iiiiiii     ssssssssss   
+          A:::::A:::::A          n:::nn::::::::nn    a::::::::::::a  t:::::::::::::::::t    r::::rrr:::::::::r  i:::::i   ss::::::::::s  
+         A:::::A A:::::A         n::::::::::::::nn   aaaaaaaaa:::::a t:::::::::::::::::t    r:::::::::::::::::r  i::::i ss:::::::::::::s 
+        A:::::A   A:::::A        nn:::::::::::::::n           a::::a tttttt:::::::tttttt    rr::::::rrrrr::::::r i::::i s::::::ssss:::::s
+       A:::::A     A:::::A         n:::::nnnn:::::n    aaaaaaa:::::a       t:::::t           r:::::r     r:::::r i::::i  s:::::s  ssssss 
+      A:::::AAAAAAAAA:::::A        n::::n    n::::n  aa::::::::::::a       t:::::t           r:::::r     rrrrrrr i::::i    s::::::s      
+     A:::::::::::::::::::::A       n::::n    n::::n a::::aaaa::::::a       t:::::t           r:::::r             i::::i       s::::::s   
+    A:::::AAAAAAAAAAAAA:::::A      n::::n    n::::na::::a    a:::::a       t:::::t    tttttt r:::::r             i::::i ssssss   s:::::s 
+   A:::::A             A:::::A     n::::n    n::::na::::a    a:::::a       t::::::tttt:::::t r:::::r            i::::::is:::::ssss::::::s
+  A:::::A               A:::::A    n::::n    n::::na:::::aaaa::::::a       tt::::::::::::::t r:::::r            i::::::is::::::::::::::s 
+ A:::::A                 A:::::A   n::::n    n::::n a::::::::::aa:::a        tt:::::::::::tt r:::::r            i::::::i s:::::::::::ss  
+AAAAAAA                   AAAAAAA  nnnnnn    nnnnnn  aaaaaaaaaa  aaaa          ttttttttttt   rrrrrrr            iiiiiiii  sssssssssss    

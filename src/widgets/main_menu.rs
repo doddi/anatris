@@ -1,3 +1,5 @@
+use std::fs::read_to_string;
+
 use anathema::{
     component::Component,
     state::{State, Value},
@@ -41,6 +43,7 @@ pub(crate) enum MainMenuComponentMessage {
 
 #[derive(State)]
 pub(crate) struct MainMenuComponentState {
+    title: Value<String>,
     start_highlighted: Value<bool>,
     visible: Value<bool>,
 }
@@ -48,6 +51,7 @@ pub(crate) struct MainMenuComponentState {
 impl MainMenuComponentState {
     pub(crate) fn new() -> Self {
         Self {
+            title: Value::new(read_to_string("src/resources/title.txt").unwrap()),
             start_highlighted: Value::new(true),
             visible: Value::new(true),
         }

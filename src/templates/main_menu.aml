@@ -5,26 +5,36 @@ let menu_bg = "white"
 
 if visible
   vstack
+    hstack
+      spacer
+      text title
+      spacer
     spacer
     hstack
       spacer
       border [width: 50, background: "grey", foreground: "red"]
         vstack
           padding
-            hstack
-              spacer
-              if start_highlighted
-                text [foreground: menu_highlight_fg, background: menu_highlight_bg] "Start"
-              else
-                text [foreground: menu_fg, background: menu_bg] "Start"
-              spacer
+            if start_highlighted
+              hstack [foreground: menu_highlight_fg, background: menu_highlight_bg]
+                spacer
+                text "Start"
+                spacer
+            else
+              hstack [foreground: menu_fg, background: menu_bg]
+                spacer
+                text "Start"
+                spacer
           padding
-            hstack
-              spacer
-              if !start_highlighted
-                text [foreground: menu_highlight_fg, background: menu_highlight_bg] "Exit"
-              else
-                text [foreground: menu_fg, background: menu_bg] "Exit"
-              spacer
+            if !start_highlighted
+              hstack [foreground: menu_highlight_fg, background: menu_highlight_bg]
+                spacer
+                text "Exit"
+                spacer
+            else
+              hstack [foreground: menu_fg, background: menu_bg]
+                spacer
+                text "Exit"
+                spacer
       spacer
     spacer
