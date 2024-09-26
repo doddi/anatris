@@ -5,6 +5,7 @@ use super::tetronimo::{Tetronimo, TetronimoShape};
 pub(crate) struct GameLoop {
     arena: Vec<Option<TetronimoShape>>,
 
+    next_piece: Option<TetronimoShape>,
     piece: Tetronimo,
     old_piece: Option<Tetronimo>,
 
@@ -50,7 +51,9 @@ impl GameLoop {
     pub(crate) fn new(arena_width: usize, arena_height: usize) -> Self {
         Self {
             arena: Vec::with_capacity(arena_width * arena_height),
-            piece: Tetronimo::new(),
+
+            next_piece: None,
+            piece: Tetronimo::random(),
             old_piece: None,
             position: Position::new(0, 0),
             old_position: Position::new(0, 0),
@@ -83,22 +86,29 @@ impl GameLoop {
         }
     }
 
-    pub(crate) fn do_state_machine<S: FnMut(u16), L: FnMut(u16)>(
+    pub(crate) fn do_state_machine<S, L, T, N>(
         &mut self,
         update_score: S,
         update_line: L,
-    ) {
+        update_next: N,
+        _update_statistics: T,
+    ) where
+        S: FnMut(u16),
+        L: FnMut(u16),
+        N: FnMut(TetronimoShape),
+        T: FnMut(u16, u16, u16, u16, u16, u16, u16),
+    {
         self.old_position = self.position.clone();
         self.old_piece = Some(self.piece.clone());
         match self.game_state {
             GameState::Paused => (),
-            GameState::Start => self.handle_start(update_score, update_line),
+            GameState::Start => self.handle_start(update_score, update_line, update_next),
             GameState::Running => (),
             GameState::Falling => self.handle_falling(),
             GameState::Moving(game_move_type) => {
                 self.handle_movement_state(&game_move_type);
             }
-            GameState::PieceBlocked => self.handle_piece_blocked(),
+            GameState::PieceBlocked => self.handle_piece_blocked(update_next),
             GameState::CheckRows => self.handle_check_rows(update_score, update_line),
             GameState::CheckGameOver => self.handle_check_game_over(),
             GameState::GameOver => self.handle_game_over(),
@@ -178,15 +188,18 @@ impl GameLoop {
         }
     }
 
-    fn handle_piece_blocked(&mut self) {
-        self.create_new_piece();
+    fn handle_piece_blocked<P>(&mut self, update_next_piece: P)
+    where
+        P: FnMut(TetronimoShape),
+    {
+        self.create_new_piece(update_next_piece);
         self.game_state = GameState::CheckRows;
     }
 
     fn handle_check_rows<S: FnMut(u16), L: FnMut(u16)>(
         &mut self,
         mut update_score: S,
-        update_line: L,
+        _update_line: L,
     ) {
         // TODO: if rows removed update lines and score
         update_score(5);
@@ -197,12 +210,17 @@ impl GameLoop {
         self.game_state = GameState::Running;
     }
 
-    fn handle_start<S: FnMut(u16), L: FnMut(u16)>(
+    fn handle_start<S, L, P>(
         &mut self,
         mut update_score: S,
         mut update_lines: L,
-    ) {
-        self.create_new_piece();
+        update_next_piece: P,
+    ) where
+        S: FnMut(u16),
+        L: FnMut(u16),
+        P: FnMut(TetronimoShape),
+    {
+        self.create_new_piece(update_next_piece);
         self.create_new_arena();
         self.current_score = 0;
         self.current_lines = 0;
@@ -215,9 +233,20 @@ impl GameLoop {
         todo!()
     }
 
-    fn create_new_piece(&mut self) {
-        self.piece = Tetronimo::new();
+    fn create_new_piece<P>(&mut self, mut update_next_piece: P)
+    where
+        P: FnMut(TetronimoShape),
+    {
+        self.piece = match &self.next_piece {
+            Some(piece) => Tetronimo::new(piece.clone()),
+            None => Tetronimo::random(),
+        };
+        self.next_piece = Some(rand::random());
         self.position = Position::new(self.arena_size.x / 2, 0);
+
+        if let Some(next_piece) = &self.next_piece {
+            update_next_piece(next_piece.clone());
+        }
     }
 
     fn create_new_arena(&mut self) {

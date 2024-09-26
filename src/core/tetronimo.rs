@@ -1,7 +1,7 @@
 use rand::distributions::{Distribution, Standard};
 
 #[derive(Clone)]
-pub(super) enum TetronimoShape {
+pub(crate) enum TetronimoShape {
     IShape,
     JShape,
     LShape,
@@ -98,7 +98,14 @@ const Z_UP: [bool; 6] = [true, true, false, false, true, true];
 const Z_RIGHT: [bool; 6] = [false, true, true, true, true, false];
 
 impl Tetronimo {
-    pub(crate) fn new() -> Self {
+    pub(crate) fn new(shape: TetronimoShape) -> Self {
+        Self {
+            shape,
+            rotation: TetronimoRotation::North,
+        }
+    }
+
+    pub(crate) fn random() -> Self {
         Self {
             // shape: TetronimoShape::TShape,
             shape: rand::random(),

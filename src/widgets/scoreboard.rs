@@ -15,8 +15,8 @@ impl Component for ScoreBoardComponent {
         &mut self,
         message: Self::Message,
         state: &mut Self::State,
-        mut elements: anathema::widgets::Elements<'_, '_>,
-        mut context: anathema::prelude::Context<'_, Self::State>,
+        mut _elements: anathema::widgets::Elements<'_, '_>,
+        mut _context: anathema::prelude::Context<'_, Self::State>,
     ) {
         match message {
             ScoreBoardMessage::Score(value) => *state.current_score.to_mut() = value,

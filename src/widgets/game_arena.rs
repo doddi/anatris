@@ -11,7 +11,10 @@ use anathema::{
 
 use crate::core::game_loop::{GameAction, GameLoop, MoveActionType};
 
-use super::{line_count::LineCountMessage, scoreboard::ScoreBoardMessage};
+use super::{
+    line_count::LineCountMessage, next_piece::NextPieceMessage, scoreboard::ScoreBoardMessage,
+    statistics::StatisticsMessage,
+};
 
 // TODO: Gameplay logic should be moved to core module
 const GLYPH_WIDTH: u16 = 2;
@@ -63,12 +66,16 @@ pub(crate) struct GameArenaComponent {
 
     score_board_id: ComponentId<ScoreBoardMessage>,
     lines_id: ComponentId<LineCountMessage>,
+    next_piece_id: ComponentId<NextPieceMessage>,
+    statistics_id: ComponentId<StatisticsMessage>,
 }
 
 impl GameArenaComponent {
     pub(crate) fn new(
         score_board_id: ComponentId<ScoreBoardMessage>,
         lines_id: ComponentId<LineCountMessage>,
+        next_piece_id: ComponentId<NextPieceMessage>,
+        statistics_id: ComponentId<StatisticsMessage>,
     ) -> Self {
         Self {
             last_fall_update: Duration::ZERO,
@@ -79,6 +86,8 @@ impl GameArenaComponent {
 
             score_board_id,
             lines_id,
+            next_piece_id,
+            statistics_id,
         }
     }
 
@@ -105,7 +114,7 @@ impl GameArenaComponent {
 
     fn handle_moving_state(
         &mut self,
-        state: &mut GameArenaComponentState,
+        _state: &mut GameArenaComponentState,
         mut elements: Elements,
         context: &Context<'_, GameArenaComponentState>,
         dt: Duration,
@@ -138,6 +147,13 @@ impl GameArenaComponent {
         self.game_loop.do_state_machine(
             |score| context.emit(self.score_board_id, ScoreBoardMessage::Score(score)),
             |score| context.emit(self.lines_id, LineCountMessage::Count(score)),
+            |shape| context.emit(self.next_piece_id, NextPieceMessage::new(shape)),
+            |i, j, l, o, t, s, z| {
+                context.emit(
+                    self.statistics_id,
+                    StatisticsMessage::new(i, j, l, o, t, s, z),
+                )
+            },
         );
 
         elements.by_tag("canvas").first(|el, _| {

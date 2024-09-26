@@ -60,21 +60,21 @@ fn main() {
         )
         .unwrap();
 
-    runtime
+    let next_piece_id = runtime
         .register_component(
             "NextPiece",
             "src/templates/next_piece.aml",
             NextPieceComponent {},
-            NextPieceState {},
+            NextPieceState::new(),
         )
         .unwrap();
 
-    runtime
+    let statistics_id = runtime
         .register_component(
             "Statistics",
             "src/templates/statistics.aml",
             StatisticsComponent {},
-            StatisticsState {},
+            StatisticsState::new(),
         )
         .unwrap();
 
@@ -100,7 +100,7 @@ fn main() {
         .register_component(
             "GameArena",
             "src/templates/game_arena.aml",
-            GameArenaComponent::new(score_board_id, lines_count_id),
+            GameArenaComponent::new(score_board_id, lines_count_id, next_piece_id, statistics_id),
             GameArenaComponentState::new(),
         )
         .unwrap();

@@ -6,6 +6,9 @@ border
         spacer
         text "STATISTICS"
         spacer
-      for type in ["I", "J", "L", "O", "S", "T", "Z"]
-        @StaticPiece [type: type]
+      for shape in ["I", "J", "L", "O", "S", "T", "Z"]
+        hstack
+          // TODO: Move this text below the StaticPiece and it does not show
+          text I
+          @StaticPiece [shape: shape]
     spacer

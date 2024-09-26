@@ -4,8 +4,9 @@ border
     vstack [height: 5]
       hstack
         spacer
-        text "NEXT"
+        text "Next Piece"
         spacer
       spacer
-      @StaticPiece [type: "I"]
+      // TODO: The pieces are too low
+      @StaticPiece [shape: shape]
     spacer
