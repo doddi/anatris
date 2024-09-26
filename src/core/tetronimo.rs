@@ -1,6 +1,7 @@
 use rand::distributions::{Distribution, Standard};
 
-enum TetronimoShape {
+#[derive(Clone)]
+pub(super) enum TetronimoShape {
     IShape,
     JShape,
     LShape,
@@ -8,6 +9,20 @@ enum TetronimoShape {
     SShape,
     TShape,
     ZShape,
+}
+
+impl From<&TetronimoShape> for char {
+    fn from(value: &TetronimoShape) -> Self {
+        match value {
+            TetronimoShape::IShape => I_COLOR,
+            TetronimoShape::JShape => J_COLOR,
+            TetronimoShape::LShape => L_COLOR,
+            TetronimoShape::OShape => O_COLOR,
+            TetronimoShape::SShape => S_COLOR,
+            TetronimoShape::TShape => T_COLOR,
+            TetronimoShape::ZShape => Z_COLOR,
+        }
+    }
 }
 
 impl Distribution<TetronimoShape> for Standard {
@@ -143,7 +158,7 @@ impl Tetronimo {
         }
     }
 
-    pub(crate) fn rotate(&self) {
-        self.rotation.clockwise();
+    pub(crate) fn rotate(&mut self) {
+        self.rotation = self.rotation.clockwise();
     }
 }

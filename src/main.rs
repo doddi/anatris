@@ -2,15 +2,15 @@ mod core;
 mod widgets;
 
 use anathema::{
+    backend::tui::events::CTKeyCode,
     component::{ComponentId, KeyCode, KeyEvent},
     prelude::*,
+    widgets::components::events::KeyState,
 };
 use std::fs::read_to_string;
 use widgets::{
     game::{GameComponent, GameComponentMessage, GameComponentState},
-    game_arena::{
-        GameArenaComponent, GameArenaComponentMessage, GameArenaComponentState, MoveType,
-    },
+    game_arena::{GameArenaComponent, GameArenaComponentMessage, GameArenaComponentState},
     game_type::{GameTypeComponent, GameTypeState},
     line_count::{LineCountComponent, LineCountState},
     main_menu::{MainMenuComponent, MainMenuComponentMessage, MainMenuComponentState},
@@ -175,14 +175,14 @@ impl<'a> GameStateManagement<'a> {
         event: &anathema::component::Event,
     ) -> Option<anathema::component::Event> {
         if let anathema::component::Event::Key(key_event) = event {
-            let KeyEvent {
-                code,
-                ctrl: _,
-                state: _,
-            } = key_event;
-            if let KeyCode::CtrlC = code {
-                return Some(anathema::component::Event::Stop);
-            }
+            return match key_event {
+                KeyEvent {
+                    code: KeyCode::Char('c'),
+                    ctrl: true,
+                    state: KeyState::Press,
+                } => Some(anathema::component::Event::Stop),
+                _ => None,
+            };
         }
         None
     }
@@ -192,20 +192,30 @@ impl<'a> GameStateManagement<'a> {
         event: anathema::component::Event,
         ctx: &mut GlobalContext<'_>,
     ) -> Option<anathema::component::Event> {
-        match event {
-            anathema::component::Event::Key(keyevent) => {
-                let KeyEvent {
-                    code,
-                    ctrl: _,
-                    state: _,
-                } = keyevent;
-                if let KeyCode::Enter = code {
+        if let anathema::component::Event::Key(keyevent) = event {
+            match keyevent {
+                KeyEvent {
+                    code: KeyCode::Enter,
+                    ..
+                } => {
                     ctx.emit(*self.main_menu, MainMenuComponentMessage::Invisible);
                     ctx.emit(*self.game, GameComponentMessage::Visible);
                     self.state = GameState::Playing;
                 }
+                KeyEvent {
+                    code: KeyCode::Char('w'),
+                    ..
+                } => {
+                    ctx.emit(*self.main_menu, MainMenuComponentMessage::KeyUp);
+                }
+                KeyEvent {
+                    code: KeyCode::Char('s'),
+                    ..
+                } => {
+                    ctx.emit(*self.main_menu, MainMenuComponentMessage::KeyDown);
+                }
+                _ => (),
             }
-            _ => (),
         }
         None
     }
@@ -255,14 +265,12 @@ impl<'a> GameStateManagement<'a> {
                     self.state = GameState::Paused;
                 }
                 KeyCode::Char(' ') => ctx.emit(*self.game_arena, GameArenaComponentMessage::Rotate),
-                KeyCode::Char('a') => ctx.emit(
-                    *self.game_arena,
-                    GameArenaComponentMessage::Move(MoveType::Left),
-                ),
-                KeyCode::Char('d') => ctx.emit(
-                    *self.game_arena,
-                    GameArenaComponentMessage::Move(MoveType::Right),
-                ),
+                KeyCode::Char('a') => {
+                    ctx.emit(*self.game_arena, GameArenaComponentMessage::MoveLeft)
+                }
+                KeyCode::Char('d') => {
+                    ctx.emit(*self.game_arena, GameArenaComponentMessage::MoveRight)
+                }
                 KeyCode::Char('s') => ctx.emit(*self.game_arena, GameArenaComponentMessage::Drop),
                 _ => (),
             }
@@ -272,8 +280,8 @@ impl<'a> GameStateManagement<'a> {
 
     fn handle_game_over(
         &self,
-        event: anathema::component::Event,
-        ctx: &mut GlobalContext,
+        _event: anathema::component::Event,
+        _ctx: &mut GlobalContext,
     ) -> Option<anathema::component::Event> {
         todo!()
     }

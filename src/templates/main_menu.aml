@@ -1,2 +1,30 @@
+let menu_highlight_fg = "white"
+let menu_highlight_bg = "red"
+let menu_fg = "red"
+let menu_bg = "white"
+
 if visible
-  text "Press Enter to Start"
+  vstack
+    spacer
+    hstack
+      spacer
+      border [width: 50, background: "grey", foreground: "red"]
+        vstack
+          padding
+            hstack
+              spacer
+              if start_highlighted
+                text [foreground: menu_highlight_fg, background: menu_highlight_bg] "Start"
+              else
+                text [foreground: menu_fg, background: menu_bg] "Start"
+              spacer
+          padding
+            hstack
+              spacer
+              if !start_highlighted
+                text [foreground: menu_highlight_fg, background: menu_highlight_bg] "Exit"
+              else
+                text [foreground: menu_fg, background: menu_bg] "Exit"
+              spacer
+      spacer
+    spacer
