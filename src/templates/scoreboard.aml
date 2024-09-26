@@ -18,5 +18,5 @@ border
           spacer
         hstack
           spacer
-          text "11111111"
+          text current_score
           spacer

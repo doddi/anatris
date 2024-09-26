@@ -2,5 +2,5 @@ border [width: CANVAS_WIDTH + 2]
   hstack
     spacer
     text "LINES "
-    text "0"
+    text count
     spacer

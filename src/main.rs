@@ -51,12 +51,12 @@ fn main() {
         )
         .unwrap();
 
-    runtime
+    let score_board_id = runtime
         .register_component(
             "ScoreBoard",
             "src/templates/scoreboard.aml",
             ScoreBoardComponent {},
-            ScoreBoardState {},
+            ScoreBoardState::new(),
         )
         .unwrap();
 
@@ -78,12 +78,12 @@ fn main() {
         )
         .unwrap();
 
-    runtime
+    let lines_count_id = runtime
         .register_component(
             "LineCount",
             "src/templates/line_count.aml",
             LineCountComponent {},
-            LineCountState {},
+            LineCountState::new(),
         )
         .unwrap();
 
@@ -100,7 +100,7 @@ fn main() {
         .register_component(
             "GameArena",
             "src/templates/game_arena.aml",
-            GameArenaComponent::new(),
+            GameArenaComponent::new(score_board_id, lines_count_id),
             GameArenaComponentState::new(),
         )
         .unwrap();

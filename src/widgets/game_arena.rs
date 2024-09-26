@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use anathema::{
     backend::tui::Style,
-    component::{Component, Context},
+    component::{Component, ComponentId, Context},
     default_widgets::Canvas,
     geometry::LocalPos,
     state::{AnyState, List, State, Value},
@@ -11,10 +11,14 @@ use anathema::{
 
 use crate::core::game_loop::{GameAction, GameLoop, MoveActionType};
 
+use super::{line_count::LineCountMessage, scoreboard::ScoreBoardMessage};
+
 // TODO: Gameplay logic should be moved to core module
 const GLYPH_WIDTH: u16 = 2;
 const CANVAS_WIDTH: u16 = 10;
 const CANVAS_HEIGHT: u16 = 20;
+const MOVE_TICK_DURATION: u64 = 200;
+const FALL_TICK_DURATION: u64 = 500;
 
 #[derive(State)]
 pub(crate) struct GameArenaComponentState {
@@ -56,16 +60,25 @@ pub(crate) struct GameArenaComponent {
 
     move_requested: MoveActionType,
     game_loop: GameLoop,
+
+    score_board_id: ComponentId<ScoreBoardMessage>,
+    lines_id: ComponentId<LineCountMessage>,
 }
 
 impl GameArenaComponent {
-    pub(crate) fn new() -> Self {
+    pub(crate) fn new(
+        score_board_id: ComponentId<ScoreBoardMessage>,
+        lines_id: ComponentId<LineCountMessage>,
+    ) -> Self {
         Self {
             last_fall_update: Duration::ZERO,
             last_move_update: Duration::ZERO,
 
             move_requested: MoveActionType::None,
             game_loop: GameLoop::new(CANVAS_WIDTH as usize, CANVAS_HEIGHT as usize),
+
+            score_board_id,
+            lines_id,
         }
     }
 
@@ -92,14 +105,15 @@ impl GameArenaComponent {
 
     fn handle_moving_state(
         &mut self,
-        dt: Duration,
-        mut elements: Elements,
         state: &mut GameArenaComponentState,
+        mut elements: Elements,
+        context: &Context<'_, GameArenaComponentState>,
+        dt: Duration,
     ) {
         self.last_fall_update += dt;
         self.last_move_update += dt;
 
-        if self.last_move_update >= Duration::from_millis(200) {
+        if self.last_move_update >= Duration::from_millis(MOVE_TICK_DURATION) {
             self.last_move_update = Duration::ZERO;
             match self.move_requested {
                 MoveActionType::MoveLeft => self
@@ -116,26 +130,14 @@ impl GameArenaComponent {
             self.move_requested = MoveActionType::None;
         }
 
-        if self.last_fall_update >= Duration::from_secs(1) {
+        if self.last_fall_update >= Duration::from_millis(FALL_TICK_DURATION) {
             self.last_fall_update = Duration::ZERO;
             self.game_loop.fall_tick();
         }
 
-        self.game_loop.do_state_machine();
-        for _idx in 0..state.debug.len() {
-            state.debug.remove(0);
-        }
-        state.debug.insert(
-            0,
-            format!("position:     {:?}", self.game_loop.get_position()),
-        );
-        state.debug.insert(
-            0,
-            format!("position:     {:?}", self.game_loop.get_position()),
-        );
-        state.debug.insert(
-            1,
-            format!("old_position: {:?}", self.game_loop.get_old_position()),
+        self.game_loop.do_state_machine(
+            |score| context.emit(self.score_board_id, ScoreBoardMessage::Score(score)),
+            |score| context.emit(self.lines_id, LineCountMessage::Count(score)),
         );
 
         elements.by_tag("canvas").first(|el, _| {
@@ -159,11 +161,11 @@ impl Component for GameArenaComponent {
         context: Context<'_, Self::State>,
         dt: Duration,
     ) {
-        let is_paused = extract_bool_attribute(context, "paused");
+        let is_paused = extract_bool_attribute(&context, "paused");
 
         match is_paused {
             Some(true) => self.game_loop.handle_input(GameAction::Pause),
-            _ => self.handle_moving_state(dt, elements, state),
+            _ => self.handle_moving_state(state, elements, &context, dt),
         }
     }
 
@@ -181,7 +183,7 @@ impl Component for GameArenaComponent {
 }
 
 fn extract_bool_attribute(
-    context: Context<GameArenaComponentState>,
+    context: &Context<GameArenaComponentState>,
     attribute: &str,
 ) -> Option<bool> {
     let either = context.get_external(attribute);

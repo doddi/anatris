@@ -14,6 +14,9 @@ pub(crate) struct GameLoop {
     arena_size: Position,
 
     game_state: GameState,
+
+    current_score: u16,
+    current_lines: u16,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -53,15 +56,10 @@ impl GameLoop {
             old_position: Position::new(0, 0),
             arena_size: Position::new(arena_width, arena_height),
             game_state: GameState::Start,
+
+            current_score: 0,
+            current_lines: 0,
         }
-    }
-
-    pub(crate) fn get_position(&self) -> LocalPos {
-        self.position.clone().into()
-    }
-
-    pub(crate) fn get_old_position(&self) -> LocalPos {
-        self.old_position.clone().into()
     }
 
     pub(crate) fn handle_input(&mut self, game_action: GameAction) {
@@ -85,19 +83,23 @@ impl GameLoop {
         }
     }
 
-    pub(crate) fn do_state_machine(&mut self) {
+    pub(crate) fn do_state_machine<S: FnMut(u16), L: FnMut(u16)>(
+        &mut self,
+        update_score: S,
+        update_line: L,
+    ) {
         self.old_position = self.position.clone();
         self.old_piece = Some(self.piece.clone());
         match self.game_state {
             GameState::Paused => (),
-            GameState::Start => self.handle_start(),
+            GameState::Start => self.handle_start(update_score, update_line),
             GameState::Running => (),
             GameState::Falling => self.handle_falling(),
             GameState::Moving(game_move_type) => {
                 self.handle_movement_state(&game_move_type);
             }
             GameState::PieceBlocked => self.handle_piece_blocked(),
-            GameState::CheckRows => self.handle_check_rows(),
+            GameState::CheckRows => self.handle_check_rows(update_score, update_line),
             GameState::CheckGameOver => self.handle_check_game_over(),
             GameState::GameOver => self.handle_game_over(),
         }
@@ -181,7 +183,13 @@ impl GameLoop {
         self.game_state = GameState::CheckRows;
     }
 
-    fn handle_check_rows(&mut self) {
+    fn handle_check_rows<S: FnMut(u16), L: FnMut(u16)>(
+        &mut self,
+        mut update_score: S,
+        update_line: L,
+    ) {
+        // TODO: if rows removed update lines and score
+        update_score(5);
         self.game_state = GameState::CheckGameOver;
     }
 
@@ -189,9 +197,17 @@ impl GameLoop {
         self.game_state = GameState::Running;
     }
 
-    fn handle_start(&mut self) {
+    fn handle_start<S: FnMut(u16), L: FnMut(u16)>(
+        &mut self,
+        mut update_score: S,
+        mut update_lines: L,
+    ) {
         self.create_new_piece();
         self.create_new_arena();
+        self.current_score = 0;
+        self.current_lines = 0;
+        update_score(self.current_score);
+        update_lines(self.current_lines);
         self.game_state = GameState::Running;
     }
 
