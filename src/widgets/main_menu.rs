@@ -1,6 +1,6 @@
 use anathema::{
     component::Component,
-    state::{AnyState, State, Value},
+    state::{State, Value},
 };
 
 pub(crate) struct MainMenuComponent;

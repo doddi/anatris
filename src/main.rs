@@ -226,24 +226,21 @@ impl<'a> GameStateManagement<'a> {
         event: anathema::component::Event,
         ctx: &mut GlobalContext,
     ) -> Option<anathema::component::Event> {
-        match event {
-            anathema::component::Event::Key(keyevent) => {
-                let KeyEvent {
-                    code,
-                    ctrl: _,
-                    state: _,
-                } = keyevent;
+        if let anathema::component::Event::Key(keyevent) = event {
+            let KeyEvent {
+                code,
+                ctrl: _,
+                state: _,
+            } = keyevent;
 
-                if let KeyCode::Esc = code {
-                    ctx.emit(*self.game, GameComponentMessage::Running);
-                    self.state = GameState::Playing;
-                } else if let KeyCode::Enter = code {
-                    ctx.emit(*self.main_menu, MainMenuComponentMessage::Visible);
-                    ctx.emit(*self.game, GameComponentMessage::Invisible);
-                    self.state = GameState::MainMenu;
-                }
+            if let KeyCode::Esc = code {
+                ctx.emit(*self.game, GameComponentMessage::Running);
+                self.state = GameState::Playing;
+            } else if let KeyCode::Enter = code {
+                ctx.emit(*self.main_menu, MainMenuComponentMessage::Visible);
+                ctx.emit(*self.game, GameComponentMessage::Invisible);
+                self.state = GameState::MainMenu;
             }
-            _ => (),
         }
         None
     }

@@ -155,7 +155,7 @@ impl Component for GameArenaComponent {
     fn tick(
         &mut self,
         state: &mut Self::State,
-        mut elements: Elements<'_, '_>,
+        elements: Elements<'_, '_>,
         context: Context<'_, Self::State>,
         dt: Duration,
     ) {
