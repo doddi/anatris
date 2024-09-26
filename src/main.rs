@@ -2,7 +2,6 @@ mod core;
 mod widgets;
 
 use anathema::{
-    backend::tui::events::CTKeyCode,
     component::{ComponentId, KeyCode, KeyEvent},
     prelude::*,
     widgets::components::events::KeyState,
@@ -192,6 +191,8 @@ impl<'a> GameStateManagement<'a> {
         event: anathema::component::Event,
         ctx: &mut GlobalContext<'_>,
     ) -> Option<anathema::component::Event> {
+        // TODO: How to actually exit now that I have taken over the handler
+        // only the widget itself knows that it has highlighted Exit
         if let anathema::component::Event::Key(keyevent) = event {
             match keyevent {
                 KeyEvent {

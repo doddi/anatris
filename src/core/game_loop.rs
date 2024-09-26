@@ -4,7 +4,9 @@ use super::tetronimo::{Tetronimo, TetronimoShape};
 
 pub(crate) struct GameLoop {
     arena: Vec<Option<TetronimoShape>>,
+
     piece: Tetronimo,
+    old_piece: Option<Tetronimo>,
 
     position: Position,
     old_position: Position,
@@ -42,6 +44,18 @@ pub(crate) enum GameAction {
 }
 
 impl GameLoop {
+    pub(crate) fn new(arena_width: usize, arena_height: usize) -> Self {
+        Self {
+            arena: Vec::with_capacity(arena_width * arena_height),
+            piece: Tetronimo::new(),
+            old_piece: None,
+            position: Position::new(0, 0),
+            old_position: Position::new(0, 0),
+            arena_size: Position::new(arena_width, arena_height),
+            game_state: GameState::Start,
+        }
+    }
+
     pub(crate) fn get_position(&self) -> LocalPos {
         self.position.clone().into()
     }
@@ -73,6 +87,7 @@ impl GameLoop {
 
     pub(crate) fn do_state_machine(&mut self) {
         self.old_position = self.position.clone();
+        self.old_piece = Some(self.piece.clone());
         match self.game_state {
             GameState::Paused => (),
             GameState::Start => self.handle_start(),
@@ -128,7 +143,18 @@ impl GameLoop {
     fn handle_drop(&mut self) {}
 
     fn handle_move_left(&mut self) {
-        if self.position.x > 0 {
+        let (_, shape, width) = self.piece.get_chars();
+        if shape
+            .iter()
+            .enumerate()
+            .filter(|(offset, present)| {
+                let x = offset % width;
+                let cube_position_on_arena = self.position.x + x;
+                **present && cube_position_on_arena == 0
+            })
+            .count()
+            == 0
+        {
             self.position.x -= 1;
         }
     }
@@ -166,6 +192,7 @@ impl GameLoop {
     fn handle_start(&mut self) {
         self.create_new_piece();
         self.create_new_arena();
+        self.game_state = GameState::Running;
     }
 
     fn handle_game_over(&self) {
@@ -179,17 +206,6 @@ impl GameLoop {
 
     fn create_new_arena(&mut self) {
         self.arena.fill(None);
-    }
-
-    pub(crate) fn new(arena_width: usize, arena_height: usize) -> Self {
-        Self {
-            arena: Vec::with_capacity(arena_width * arena_height),
-            piece: Tetronimo::new(),
-            position: Position::new(0, 0),
-            old_position: Position::new(0, 0),
-            arena_size: Position::new(arena_width, arena_height),
-            game_state: GameState::Running,
-        }
     }
 
     pub(crate) fn draw_piece<F>(&self, mut func: F)
@@ -212,17 +228,20 @@ impl GameLoop {
     where
         F: FnMut(LocalPos),
     {
-        let (_, shape, width) = self.piece.get_chars();
-        shape.iter().enumerate().for_each(|(offset, present)| {
-            if *present {
-                let x = (offset % width) as u16;
-                let y = (offset / width) as u16;
-                let local_pos = LocalPos::new(x, y);
-                let pos: LocalPos = self.old_position.clone().into();
-                func(local_pos + pos);
-            }
-        });
+        if let Some(piece) = &self.old_piece {
+            let (_, shape, width) = piece.get_chars();
+            shape.iter().enumerate().for_each(|(offset, present)| {
+                if *present {
+                    let x = (offset % width) as u16;
+                    let y = (offset / width) as u16;
+                    let local_pos = LocalPos::new(x, y);
+                    let pos: LocalPos = self.old_position.clone().into();
+                    func(local_pos + pos);
+                }
+            });
+        }
     }
+
     pub(crate) fn draw_arena<F>(&self, mut func: F)
     where
         F: FnMut(char, LocalPos),

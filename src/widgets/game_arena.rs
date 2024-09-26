@@ -5,7 +5,7 @@ use anathema::{
     component::{Component, Context},
     default_widgets::Canvas,
     geometry::LocalPos,
-    state::{List, State, Value},
+    state::{AnyState, List, State, Value},
     widgets::Elements,
 };
 
@@ -122,6 +122,13 @@ impl GameArenaComponent {
         }
 
         self.game_loop.do_state_machine();
+        for _idx in 0..state.debug.len() {
+            state.debug.remove(0);
+        }
+        state.debug.insert(
+            0,
+            format!("position:     {:?}", self.game_loop.get_position()),
+        );
         state.debug.insert(
             0,
             format!("position:     {:?}", self.game_loop.get_position()),
