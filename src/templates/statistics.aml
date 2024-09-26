@@ -9,6 +9,19 @@ border
       for shape in ["I", "J", "L", "O", "S", "T", "Z"]
         hstack
           // TODO: Move this text below the StaticPiece and it does not show
-          text I
+          if shape == "I"
+            text i_shape
+          else if shape == "J"
+            text j_shape
+          else if shape == "L"
+            text l_shape
+          else if shape == "O"
+            text o_shape
+          else if shape == "S"
+            text s_shape
+          else if shape == "T"
+            text t_shape
+          else if shape == "Z"
+            text z_shape
           @StaticPiece [shape: shape]
     spacer

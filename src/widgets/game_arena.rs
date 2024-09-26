@@ -148,12 +148,7 @@ impl GameArenaComponent {
             |score| context.emit(self.score_board_id, ScoreBoardMessage::Score(score)),
             |score| context.emit(self.lines_id, LineCountMessage::Count(score)),
             |shape| context.emit(self.next_piece_id, NextPieceMessage::new(shape)),
-            |i, j, l, o, t, s, z| {
-                context.emit(
-                    self.statistics_id,
-                    StatisticsMessage::new(i, j, l, o, t, s, z),
-                )
-            },
+            |statistics| context.emit(self.statistics_id, statistics.into()),
         );
 
         elements.by_tag("canvas").first(|el, _| {

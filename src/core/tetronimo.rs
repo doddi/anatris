@@ -60,7 +60,7 @@ impl TetronimoRotation {
 
 #[derive(Clone)]
 pub(crate) struct Tetronimo {
-    shape: TetronimoShape,
+    pub(crate) shape: TetronimoShape,
     rotation: TetronimoRotation,
 }
 

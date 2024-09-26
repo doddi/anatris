@@ -18,6 +18,18 @@ pub(crate) struct GameLoop {
 
     current_score: u16,
     current_lines: u16,
+    shapes_statistics: ShapeStatistics,
+}
+
+#[derive(Clone, Copy, Default)]
+pub(crate) struct ShapeStatistics {
+    pub(crate) i_count: u16,
+    pub(crate) j_count: u16,
+    pub(crate) l_count: u16,
+    pub(crate) o_count: u16,
+    pub(crate) t_count: u16,
+    pub(crate) s_count: u16,
+    pub(crate) z_count: u16,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -62,6 +74,7 @@ impl GameLoop {
 
             current_score: 0,
             current_lines: 0,
+            shapes_statistics: ShapeStatistics::default(),
         }
     }
 
@@ -91,25 +104,29 @@ impl GameLoop {
         update_score: S,
         update_line: L,
         update_next: N,
-        _update_statistics: T,
+        update_statistics: T,
     ) where
         S: FnMut(u16),
         L: FnMut(u16),
         N: FnMut(TetronimoShape),
-        T: FnMut(u16, u16, u16, u16, u16, u16, u16),
+        T: FnMut(ShapeStatistics),
     {
         self.old_position = self.position.clone();
         self.old_piece = Some(self.piece.clone());
         match self.game_state {
             GameState::Paused => (),
-            GameState::Start => self.handle_start(update_score, update_line, update_next),
+            GameState::Start => {
+                self.handle_start(update_score, update_line, update_next, update_statistics)
+            }
             GameState::Running => (),
             GameState::Falling => self.handle_falling(),
             GameState::Moving(game_move_type) => {
                 self.handle_movement_state(&game_move_type);
             }
-            GameState::PieceBlocked => self.handle_piece_blocked(update_next),
-            GameState::CheckRows => self.handle_check_rows(update_score, update_line),
+            GameState::PieceBlocked => self.handle_piece_blocked(update_next, update_statistics),
+            GameState::CheckRows => {
+                self.handle_check_rows(update_score, update_line, update_statistics)
+            }
             GameState::CheckGameOver => self.handle_check_game_over(),
             GameState::GameOver => self.handle_game_over(),
         }
@@ -188,19 +205,25 @@ impl GameLoop {
         }
     }
 
-    fn handle_piece_blocked<P>(&mut self, update_next_piece: P)
+    fn handle_piece_blocked<P, T>(&mut self, update_next_piece: P, update_statistics: T)
     where
         P: FnMut(TetronimoShape),
+        T: FnMut(ShapeStatistics),
     {
-        self.create_new_piece(update_next_piece);
+        self.create_new_piece(update_next_piece, update_statistics);
         self.game_state = GameState::CheckRows;
     }
 
-    fn handle_check_rows<S: FnMut(u16), L: FnMut(u16)>(
+    fn handle_check_rows<S, L, T>(
         &mut self,
         mut update_score: S,
         _update_line: L,
-    ) {
+        _update_statistics: T,
+    ) where
+        S: FnMut(u16),
+        L: FnMut(u16),
+        T: FnMut(ShapeStatistics),
+    {
         // TODO: if rows removed update lines and score
         update_score(5);
         self.game_state = GameState::CheckGameOver;
@@ -210,17 +233,19 @@ impl GameLoop {
         self.game_state = GameState::Running;
     }
 
-    fn handle_start<S, L, P>(
+    fn handle_start<S, L, P, T>(
         &mut self,
         mut update_score: S,
         mut update_lines: L,
         update_next_piece: P,
+        update_statistics: T,
     ) where
         S: FnMut(u16),
         L: FnMut(u16),
         P: FnMut(TetronimoShape),
+        T: FnMut(ShapeStatistics),
     {
-        self.create_new_piece(update_next_piece);
+        self.create_new_piece(update_next_piece, update_statistics);
         self.create_new_arena();
         self.current_score = 0;
         self.current_lines = 0;
@@ -233,14 +258,27 @@ impl GameLoop {
         todo!()
     }
 
-    fn create_new_piece<P>(&mut self, mut update_next_piece: P)
+    fn create_new_piece<P, T>(&mut self, mut update_next_piece: P, mut update_statistics: T)
     where
         P: FnMut(TetronimoShape),
+        T: FnMut(ShapeStatistics),
     {
         self.piece = match &self.next_piece {
             Some(piece) => Tetronimo::new(piece.clone()),
             None => Tetronimo::random(),
         };
+
+        match self.piece.shape {
+            TetronimoShape::IShape => self.shapes_statistics.i_count += 1,
+            TetronimoShape::JShape => self.shapes_statistics.j_count += 1,
+            TetronimoShape::LShape => self.shapes_statistics.l_count += 1,
+            TetronimoShape::OShape => self.shapes_statistics.o_count += 1,
+            TetronimoShape::SShape => self.shapes_statistics.s_count += 1,
+            TetronimoShape::TShape => self.shapes_statistics.t_count += 1,
+            TetronimoShape::ZShape => self.shapes_statistics.z_count += 1,
+        };
+
+        update_statistics(self.shapes_statistics);
         self.next_piece = Some(rand::random());
         self.position = Position::new(self.arena_size.x / 2, 0);
 

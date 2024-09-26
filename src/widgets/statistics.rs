@@ -3,6 +3,8 @@ use anathema::{
     state::{State, Value},
 };
 
+use crate::core::game_loop::ShapeStatistics;
+
 pub(crate) struct StatisticsComponent;
 
 impl StatisticsComponent {}
@@ -18,42 +20,43 @@ impl Component for StatisticsComponent {
         mut _elements: anathema::widgets::Elements<'_, '_>,
         mut _context: anathema::prelude::Context<'_, Self::State>,
     ) {
-        *state.I.to_mut() = message.i_stat;
-        *state.J.to_mut() = message.j_stat;
-        *state.L.to_mut() = message.l_stat;
-        *state.O.to_mut() = message.o_stat;
-        *state.T.to_mut() = message.t_stat;
-        *state.S.to_mut() = message.s_stat;
-        *state.Z.to_mut() = message.z_stat;
+        *state.i_shape.to_mut() = message.i_stat;
+        *state.j_shape.to_mut() = message.j_stat;
+        *state.l_shape.to_mut() = message.l_stat;
+        *state.o_shape.to_mut() = message.o_stat;
+        *state.t_shape.to_mut() = message.t_stat;
+        *state.s_shape.to_mut() = message.s_stat;
+        *state.z_shape.to_mut() = message.z_stat;
     }
 }
 
 #[allow(non_snake_case)]
-#[derive(State)]
+#[derive(State, Debug)]
 pub(crate) struct StatisticsState {
-    I: Value<u16>,
-    J: Value<u16>,
-    L: Value<u16>,
-    O: Value<u16>,
-    T: Value<u16>,
-    S: Value<u16>,
-    Z: Value<u16>,
+    i_shape: Value<u16>,
+    j_shape: Value<u16>,
+    l_shape: Value<u16>,
+    o_shape: Value<u16>,
+    t_shape: Value<u16>,
+    s_shape: Value<u16>,
+    z_shape: Value<u16>,
 }
 
 impl StatisticsState {
     pub(crate) fn new() -> Self {
         Self {
-            I: Value::new(0),
-            J: Value::new(0),
-            L: Value::new(0),
-            O: Value::new(0),
-            T: Value::new(0),
-            S: Value::new(0),
-            Z: Value::new(0),
+            i_shape: Value::new(0),
+            j_shape: Value::new(0),
+            l_shape: Value::new(0),
+            o_shape: Value::new(0),
+            t_shape: Value::new(0),
+            s_shape: Value::new(0),
+            z_shape: Value::new(0),
         }
     }
 }
 
+#[derive(Debug)]
 pub(crate) struct StatisticsMessage {
     i_stat: u16,
     j_stat: u16,
@@ -75,5 +78,19 @@ impl StatisticsMessage {
             s_stat: s,
             z_stat: z,
         }
+    }
+}
+
+impl From<ShapeStatistics> for StatisticsMessage {
+    fn from(value: ShapeStatistics) -> Self {
+        StatisticsMessage::new(
+            value.i_count,
+            value.j_count,
+            value.l_count,
+            value.o_count,
+            value.t_count,
+            value.s_count,
+            value.z_count,
+        )
     }
 }
