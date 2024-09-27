@@ -108,8 +108,10 @@ impl GameArenaComponent {
     }
 
     fn draw_arena(&self, canvas: &mut Canvas) {
-        self.game_loop
-            .draw_arena(|character, position| canvas.put(character, Style::reset(), position));
+        self.game_loop.draw_arena(|character, position| {
+            let position = LocalPos::new(position.x * GLYPH_WIDTH, position.y);
+            canvas.put(character, Style::reset(), position)
+        });
     }
 
     fn handle_moving_state(

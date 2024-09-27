@@ -3,7 +3,7 @@ use anathema::geometry::LocalPos;
 use super::tetronimo::{Tetronimo, TetronimoShape};
 
 pub(crate) struct GameLoop {
-    arena: Vec<Option<TetronimoShape>>,
+    arena: Vec<Option<char>>,
 
     next_piece: Option<TetronimoShape>,
     piece: Tetronimo,
@@ -62,7 +62,7 @@ pub(crate) enum GameAction {
 impl GameLoop {
     pub(crate) fn new(arena_width: usize, arena_height: usize) -> Self {
         Self {
-            arena: Vec::with_capacity(arena_width * arena_height),
+            arena: vec![None; arena_width * arena_height],
 
             next_piece: None,
             piece: Tetronimo::random(),
@@ -130,6 +130,27 @@ impl GameLoop {
             GameState::CheckGameOver => self.handle_check_game_over(),
             GameState::GameOver => self.handle_game_over(),
         }
+    }
+
+    fn handle_start<S, L, P, T>(
+        &mut self,
+        mut update_score: S,
+        mut update_lines: L,
+        update_next_piece: P,
+        update_statistics: T,
+    ) where
+        S: FnMut(u16),
+        L: FnMut(u16),
+        P: FnMut(TetronimoShape),
+        T: FnMut(ShapeStatistics),
+    {
+        self.create_new_piece(update_next_piece, update_statistics);
+        self.create_new_arena();
+        self.current_score = 0;
+        self.current_lines = 0;
+        update_score(self.current_score);
+        update_lines(self.current_lines);
+        self.game_state = GameState::Running;
     }
 
     fn handle_falling(&mut self) {
@@ -210,6 +231,7 @@ impl GameLoop {
         P: FnMut(TetronimoShape),
         T: FnMut(ShapeStatistics),
     {
+        self.add_piece_to_arena();
         self.create_new_piece(update_next_piece, update_statistics);
         self.game_state = GameState::CheckRows;
     }
@@ -233,29 +255,21 @@ impl GameLoop {
         self.game_state = GameState::Running;
     }
 
-    fn handle_start<S, L, P, T>(
-        &mut self,
-        mut update_score: S,
-        mut update_lines: L,
-        update_next_piece: P,
-        update_statistics: T,
-    ) where
-        S: FnMut(u16),
-        L: FnMut(u16),
-        P: FnMut(TetronimoShape),
-        T: FnMut(ShapeStatistics),
-    {
-        self.create_new_piece(update_next_piece, update_statistics);
-        self.create_new_arena();
-        self.current_score = 0;
-        self.current_lines = 0;
-        update_score(self.current_score);
-        update_lines(self.current_lines);
-        self.game_state = GameState::Running;
-    }
-
     fn handle_game_over(&self) {
         todo!()
+    }
+
+    fn add_piece_to_arena(&mut self) {
+        let (ch, blocks, width) = self.piece.get_chars();
+        blocks.iter().enumerate().for_each(|(offset, present)| {
+            let x = self.position.x + offset % width;
+            let y = self.position.y + offset / width;
+            if *present {
+                // let mut item = self.arena[(x * self.arena_size.x) + y];
+                // let _ = std::mem::replace(&mut item, Some(*ch));
+                self.arena[x + (self.arena_size.x * y)] = Some(*ch);
+            }
+        });
     }
 
     fn create_new_piece<P, T>(&mut self, mut update_next_piece: P, mut update_statistics: T)
@@ -288,7 +302,7 @@ impl GameLoop {
     }
 
     fn create_new_arena(&mut self) {
-        self.arena.fill(None);
+        self.arena = vec![None; self.arena_size.x * self.arena_size.y];
     }
 
     pub(crate) fn draw_piece<F>(&self, mut func: F)
@@ -331,10 +345,10 @@ impl GameLoop {
     {
         self.arena.iter().enumerate().for_each(|(offset, piece)| {
             let x = offset % self.arena_size.x;
-            let y = offset / self.arena_size.y;
+            let y = offset / self.arena_size.x;
             let local_pos = LocalPos::new(x as u16, y as u16);
             if let Some(piece) = piece {
-                func(piece.into(), local_pos);
+                func(*piece, local_pos);
             }
         });
     }
