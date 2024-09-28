@@ -159,9 +159,10 @@ impl GameLoop {
             .iter()
             .enumerate()
             .filter(|(offset, present)| {
-                let y = offset / width;
-                let cube_position_on_arena = self.position.y + y;
-                **present && (cube_position_on_arena + 1) >= self.arena_size.y
+                let x = self.position.x + offset % width;
+                let y = ((self.position.y) + offset / width) + 1;
+                let array_pos = (self.arena_size.x * y) + x;
+                **present && (y >= self.arena_size.y || self.arena[array_pos].is_some())
             })
             .count()
             == 0
@@ -171,8 +172,6 @@ impl GameLoop {
         } else {
             self.game_state = GameState::PieceBlocked;
         }
-
-        // TODO: Need to do the same test but checking against the arena pieces
     }
 
     fn handle_movement_state(&mut self, game_move_type: &MoveActionType) {
