@@ -1,3 +1,5 @@
+use std::fs;
+
 use anathema::geometry::LocalPos;
 
 use super::tetronimo::{Tetronimo, TetronimoShape};
@@ -57,6 +59,10 @@ pub(crate) enum GameState {
 pub(crate) enum GameAction {
     Pause,
     Move(MoveActionType),
+}
+
+fn write_to_file(data: String) {
+    let _ = fs::write("/tmp/foo.txt", data);
 }
 
 impl GameLoop {
@@ -238,16 +244,43 @@ impl GameLoop {
     fn handle_check_rows<S, L, T>(
         &mut self,
         mut update_score: S,
-        _update_line: L,
+        mut update_line: L,
         _update_statistics: T,
     ) where
         S: FnMut(u16),
         L: FnMut(u16),
         T: FnMut(ShapeStatistics),
     {
-        // TODO: if rows removed update lines and score
-        update_score(5);
-        self.game_state = GameState::CheckGameOver;
+        let complete_row = self.remove_complete_rows();
+
+        if complete_row > 0 {
+            self.current_score += complete_row * complete_row;
+            update_score(self.current_score);
+
+            self.current_lines += complete_row;
+            update_line(self.current_lines);
+        } else {
+            self.game_state = GameState::CheckGameOver;
+        }
+    }
+
+    fn remove_complete_rows(&mut self) -> u16 {
+        let mut complete_row = 0;
+        for y in 0..self.arena_size.y {
+            let mut complete = true;
+            for x in 0..self.arena_size.x {
+                if self.arena[(self.arena_size.x * y) + x].is_none() {
+                    complete = false;
+                }
+            }
+
+            if complete {
+                self.drop_rows(y);
+                self.drop_blocks();
+                complete_row += 1;
+            }
+        }
+        complete_row
     }
 
     fn handle_check_game_over(&mut self) {
@@ -350,6 +383,54 @@ impl GameLoop {
                 func(*piece, local_pos);
             }
         });
+
+        for y in 0..self.arena_size.y {
+            let mut data = String::new();
+            for x in 0..self.arena_size.x {
+                let content = self.arena[(self.arena_size.x * y) + x];
+                let result = match content {
+                    Some(_) => &"X",
+                    None => &" ",
+                };
+                data.push_str(result);
+            }
+            write_to_file(data + "\n");
+        }
+    }
+
+    // A completed row has been removed now it is time to drop all the blocks
+    // into place.
+    fn drop_rows(&mut self, row: usize) {
+        // Remove row from the arena
+        let row_offset = row * self.arena_size.x;
+        for col_offset in 0..self.arena_size.x {
+            self.arena[row_offset + col_offset] = None;
+        }
+    }
+
+    fn drop_blocks(&mut self) {
+        loop {
+            let mut changed = false;
+            for block in 0..(self.arena_size.x * self.arena_size.y) {
+                if self.arena[block].is_none() {
+                    // Cant drop an empty block
+                    continue;
+                } else if (block + self.arena_size.x) >= (self.arena_size.x * self.arena_size.y) {
+                    // Reached end of the board
+                    continue;
+                } else if self.arena[block + self.arena_size.x].is_none() {
+                    self.arena[block + self.arena_size.x] = self.arena[block];
+                    self.arena[block] = None;
+                    changed = true;
+                }
+            }
+
+            if changed {
+                self.drop_blocks();
+            } else {
+                break;
+            }
+        }
     }
 }
 
@@ -368,5 +449,53 @@ impl Position {
 impl From<Position> for LocalPos {
     fn from(value: Position) -> Self {
         LocalPos::new(value.x as u16, value.y as u16)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::GameLoop;
+
+    #[test]
+    fn calculate_rows_when_empty() {
+        let mut under_test = GameLoop::new(2, 2);
+
+        assert_eq!(0, under_test.remove_complete_rows());
+    }
+
+    #[test]
+    fn calculate_single_row_at_bottom() {
+        let mut under_test = GameLoop::new(3, 2);
+        under_test.arena[3] = Some('x');
+        under_test.arena[4] = Some('x');
+        under_test.arena[5] = Some('x');
+
+        assert_eq!(1, under_test.remove_complete_rows());
+    }
+
+    #[test]
+    fn calculate_all_rows() {
+        let mut under_test = GameLoop::new(3, 2);
+        under_test.arena[0] = Some('x');
+        under_test.arena[1] = Some('x');
+        under_test.arena[2] = Some('x');
+        under_test.arena[3] = Some('x');
+        under_test.arena[4] = Some('x');
+        under_test.arena[5] = Some('x');
+
+        assert_eq!(2, under_test.remove_complete_rows());
+    }
+
+    #[test]
+    fn drop_single_block() {
+        let mut under_test = GameLoop::new(2, 2);
+        under_test.arena[0] = Some('x');
+
+        under_test.drop_blocks();
+
+        assert_eq!(None, under_test.arena[0]);
+        assert_eq!(None, under_test.arena[1]);
+        assert_eq!(Some('x'), under_test.arena[2]);
+        assert_eq!(None, under_test.arena[3]);
     }
 }
