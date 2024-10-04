@@ -1,5 +1,3 @@
-use std::fs;
-
 use anathema::geometry::LocalPos;
 
 use super::tetronimo::{Tetronimo, TetronimoShape};
@@ -59,10 +57,6 @@ pub(crate) enum GameState {
 pub(crate) enum GameAction {
     Pause,
     Move(MoveActionType),
-}
-
-fn write_to_file(data: String) {
-    let _ = fs::write("/tmp/foo.txt", data);
 }
 
 impl GameLoop {
@@ -297,8 +291,6 @@ impl GameLoop {
             let x = self.position.x + offset % width;
             let y = self.position.y + offset / width;
             if *present {
-                // let mut item = self.arena[(x * self.arena_size.x) + y];
-                // let _ = std::mem::replace(&mut item, Some(*ch));
                 self.arena[x + (self.arena_size.x * y)] = Some(*ch);
             }
         });
@@ -353,49 +345,19 @@ impl GameLoop {
         });
     }
 
-    pub(crate) fn clear_piece<F>(&self, mut func: F)
+    pub(crate) fn draw_arena<D>(&self, mut draw: D)
     where
-        F: FnMut(LocalPos),
-    {
-        if let Some(piece) = &self.old_piece {
-            let (_, shape, width) = piece.get_chars();
-            shape.iter().enumerate().for_each(|(offset, present)| {
-                if *present {
-                    let x = (offset % width) as u16;
-                    let y = (offset / width) as u16;
-                    let local_pos = LocalPos::new(x, y);
-                    let pos: LocalPos = self.old_position.clone().into();
-                    func(local_pos + pos);
-                }
-            });
-        }
-    }
-
-    pub(crate) fn draw_arena<F>(&self, mut func: F)
-    where
-        F: FnMut(char, LocalPos),
+        D: FnMut(Option<char>, LocalPos),
     {
         self.arena.iter().enumerate().for_each(|(offset, piece)| {
             let x = offset % self.arena_size.x;
             let y = offset / self.arena_size.x;
             let local_pos = LocalPos::new(x as u16, y as u16);
-            if let Some(piece) = piece {
-                func(*piece, local_pos);
+            match piece {
+                Some(piece) => draw(Some(*piece), local_pos),
+                None => draw(None, local_pos),
             }
         });
-
-        for y in 0..self.arena_size.y {
-            let mut data = String::new();
-            for x in 0..self.arena_size.x {
-                let content = self.arena[(self.arena_size.x * y) + x];
-                let result = match content {
-                    Some(_) => &"X",
-                    None => &" ",
-                };
-                data.push_str(result);
-            }
-            write_to_file(data + "\n");
-        }
     }
 
     // A completed row has been removed now it is time to drop all the blocks

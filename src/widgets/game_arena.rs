@@ -98,20 +98,21 @@ impl GameArenaComponent {
         });
     }
 
-    fn clear_tetronimo(&self, canvas: &mut Canvas) {
-        self.game_loop.clear_piece(|position| {
-            let position: LocalPos = LocalPos::new(position.x * GLYPH_WIDTH, position.y);
-            canvas.erase(position);
-            let position: LocalPos = LocalPos::new(position.x * GLYPH_WIDTH, position.y + 1);
-            canvas.erase(position);
-        });
-    }
-
     fn draw_arena(&self, canvas: &mut Canvas) {
-        self.game_loop.draw_arena(|character, position| {
-            let position = LocalPos::new(position.x * GLYPH_WIDTH, position.y);
-            canvas.put(character, Style::reset(), position)
-        });
+        self.game_loop
+            .draw_arena(|character, position| match character {
+                Some(character) => {
+                    let position = LocalPos::new(position.x * GLYPH_WIDTH, position.y);
+                    canvas.put(character, Style::reset(), position)
+                }
+                None => {
+                    let position: LocalPos = LocalPos::new(position.x * GLYPH_WIDTH, position.y);
+                    canvas.erase(position);
+                    let position: LocalPos =
+                        LocalPos::new(position.x * GLYPH_WIDTH, position.y + 1);
+                    canvas.erase(position);
+                }
+            });
     }
 
     fn handle_moving_state(
@@ -157,7 +158,6 @@ impl GameArenaComponent {
             let canvas = el.to::<Canvas>();
 
             self.draw_arena(canvas);
-            self.clear_tetronimo(canvas);
             self.draw_tetronimo(canvas);
         });
     }

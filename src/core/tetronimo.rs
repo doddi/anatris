@@ -64,30 +64,36 @@ pub(crate) struct Tetronimo {
     rotation: TetronimoRotation,
 }
 
+// const I_COLOR: char = 'I';
 const I_COLOR: char = '🟦';
 const I_UP: [bool; 4] = [true, true, true, true];
 const I_RIGHT: [bool; 4] = [true, true, true, true];
 
 const J_COLOR: char = '🟪';
+// const J_COLOR: char = 'O';
 const J_UP: [bool; 6] = [true, true, true, false, false, true];
 const J_RIGHT: [bool; 6] = [false, true, false, true, true, true];
 const J_DOWN: [bool; 6] = [true, false, false, true, true, true];
 const J_LEFT: [bool; 6] = [true, true, true, false, true, false];
 
 const L_COLOR: char = '🟥';
+// const L_COLOR: char = 'L';
 const L_UP: [bool; 6] = [false, false, true, true, true, true];
 const L_RIGHT: [bool; 6] = [true, false, true, false, true, true];
 const L_DOWN: [bool; 6] = [true, true, true, true, false, false];
 const L_LEFT: [bool; 6] = [true, true, false, true, false, true];
 
 const O_COLOR: char = '🟨';
+// const O_COLOR: char = 'O';
 const O_UP: [bool; 4] = [true, true, true, true];
 
 const S_COLOR: char = '🟩';
+// const S_COLOR: char = 'S';
 const S_UP: [bool; 6] = [false, true, true, true, true, false];
 const S_RIGHT: [bool; 6] = [true, false, true, true, false, true];
 
 const T_COLOR: char = '🟫';
+// const T_COLOR: char = 'T';
 const T_UP: [bool; 6] = [false, true, false, true, true, true];
 const T_RIGHT: [bool; 6] = [true, false, true, true, true, false];
 const T_DOWN: [bool; 6] = [true, true, true, false, true, false];
