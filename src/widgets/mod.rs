@@ -6,4 +6,5 @@ pub(crate) mod main_menu;
 pub(crate) mod next_piece;
 pub(crate) mod scoreboard;
 pub(crate) mod static_piece;
+pub(crate) mod statistic;
 pub(crate) mod statistics;

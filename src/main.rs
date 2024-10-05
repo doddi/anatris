@@ -16,6 +16,7 @@ use widgets::{
     next_piece::{NextPieceComponent, NextPieceState},
     scoreboard::{ScoreBoardComponent, ScoreBoardState},
     static_piece::{StaticPieceComponent, StaticPieceState},
+    statistic::{StatisticComponent, StatisticComponentState},
     statistics::{StatisticsComponent, StatisticsState},
 };
 
@@ -75,6 +76,15 @@ fn main() {
             "src/templates/statistics.aml",
             StatisticsComponent {},
             StatisticsState::new(),
+        )
+        .unwrap();
+
+    runtime
+        .register_prototype(
+            "Statistic",
+            "src/templates/statistic.aml",
+            || StatisticComponent {},
+            StatisticComponentState::new,
         )
         .unwrap();
 

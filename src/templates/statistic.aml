@@ -1,0 +1,3 @@
+hstack
+  text count
+  @StaticPiece [shape: shape]

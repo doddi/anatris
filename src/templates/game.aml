@@ -6,17 +6,22 @@ let THEME = {
 }
 
 if visible
-  hstack
-    spacer
-    vstack [width: CANVAS_WIDTH]
-      @GameType
-      @Statistics
-    vstack
-      @LineCount
-      @GameArena [paused: paused]
-    vstack [width: CANVAS_WIDTH]
-      @ScoreBoard
-      @NextPiece
-    spacer
+  vstack
+    hstack
+      spacer
+      text title
+      spacer
+    hstack
+      spacer
+      vstack [width: CANVAS_WIDTH]
+        @GameType
+        @Statistics
+      vstack
+        @LineCount
+        @GameArena [paused: paused]
+      vstack [width: CANVAS_WIDTH]
+        @ScoreBoard
+        @NextPiece
+      spacer
 
 

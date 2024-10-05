@@ -1,3 +1,5 @@
+use std::fs::read_to_string;
+
 use anathema::{
     component::Component,
     state::{State, Value},
@@ -40,6 +42,7 @@ impl Component for GameComponent {
 
 #[derive(State)]
 pub(crate) struct GameComponentState {
+    title: Value<String>,
     paused: Value<bool>,
     visible: Value<bool>,
 }
@@ -47,6 +50,7 @@ pub(crate) struct GameComponentState {
 impl GameComponentState {
     pub(crate) fn new() -> Self {
         Self {
+            title: Value::new(read_to_string("src/resources/ingame-title.txt").unwrap()),
             visible: Value::new(false),
             paused: Value::new(true),
         }

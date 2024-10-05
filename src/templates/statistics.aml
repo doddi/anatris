@@ -7,21 +7,18 @@ border
         text "STATISTICS"
         spacer
       for shape in ["I", "J", "L", "O", "S", "T", "Z"]
-        hstack
-          // TODO: Move this text below the StaticPiece and it does not show
-          if shape == "I"
-            text i_shape
-          else if shape == "J"
-            text j_shape
-          else if shape == "L"
-            text l_shape
-          else if shape == "O"
-            text o_shape
-          else if shape == "S"
-            text s_shape
-          else if shape == "T"
-            text t_shape
-          else if shape == "Z"
-            text z_shape
-          @StaticPiece [shape: shape]
+        if shape == "I"
+          @Statistic [shape: shape, count: i_shape]
+        else if shape == "J"
+          @Statistic [shape: shape, count: j_shape]
+        else if shape == "L"
+          @Statistic [shape: shape, count: l_shape]
+        else if shape == "O"
+          @Statistic [shape: shape, count: o_shape]
+        else if shape == "S"
+          @Statistic [shape: shape, count: s_shape]
+        else if shape == "T"
+          @Statistic [shape: shape, count: t_shape]
+        else if shape == "Z"
+          @Statistic [shape: shape, count: z_shape]
     spacer
