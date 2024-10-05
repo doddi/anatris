@@ -9,14 +9,16 @@ use anathema::{
     widgets::Elements,
 };
 
-use crate::core::game_loop::{GameAction, GameLoop, MoveActionType};
+use crate::core::{
+    game_loop::{GameAction, GameLoop, MoveActionType},
+    tetronimo::TetronimoShape,
+};
 
 use super::{
     line_count::LineCountMessage, next_piece::NextPieceMessage, scoreboard::ScoreBoardMessage,
     statistics::StatisticsMessage,
 };
 
-// TODO: Gameplay logic should be moved to core module
 const GLYPH_WIDTH: u16 = 2;
 const CANVAS_WIDTH: u16 = 10;
 const CANVAS_HEIGHT: u16 = 20;
@@ -70,6 +72,20 @@ pub(crate) struct GameArenaComponent {
     statistics_id: ComponentId<StatisticsMessage>,
 }
 
+impl From<&TetronimoShape> for char {
+    fn from(value: &TetronimoShape) -> Self {
+        match value {
+            TetronimoShape::IShape => '🟦',
+            TetronimoShape::JShape => '🟪',
+            TetronimoShape::LShape => '🟥',
+            TetronimoShape::OShape => '🟨',
+            TetronimoShape::SShape => '🟩',
+            TetronimoShape::TShape => '🟫',
+            TetronimoShape::ZShape => '🟧',
+        }
+    }
+}
+
 impl GameArenaComponent {
     pub(crate) fn new(
         score_board_id: ComponentId<ScoreBoardMessage>,
@@ -94,23 +110,20 @@ impl GameArenaComponent {
     fn draw_tetronimo(&self, canvas: &mut Canvas) {
         self.game_loop.draw_piece(|character, position| {
             let position: LocalPos = LocalPos::new(position.x * GLYPH_WIDTH, position.y);
-            canvas.put(character, Style::reset(), position)
+            canvas.put(character.into(), Style::reset(), position)
         });
     }
 
     fn draw_arena(&self, canvas: &mut Canvas) {
         self.game_loop
             .draw_arena(|character, position| match character {
-                Some(character) => {
+                Some(char) => {
                     let position = LocalPos::new(position.x * GLYPH_WIDTH, position.y);
-                    canvas.put(character, Style::reset(), position)
+                    canvas.put(char.into(), Style::reset(), position)
                 }
                 None => {
-                    let position: LocalPos = LocalPos::new(position.x * GLYPH_WIDTH, position.y);
-                    canvas.erase(position);
-                    let position: LocalPos =
-                        LocalPos::new(position.x * GLYPH_WIDTH, position.y + 1);
-                    canvas.erase(position);
+                    let position = LocalPos::new(position.x * GLYPH_WIDTH, position.y);
+                    canvas.erase(position)
                 }
             });
     }

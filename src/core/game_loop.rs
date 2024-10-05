@@ -3,7 +3,7 @@ use anathema::geometry::LocalPos;
 use super::tetronimo::{Tetronimo, TetronimoShape};
 
 pub(crate) struct GameLoop {
-    arena: Vec<Option<char>>,
+    arena: Vec<Option<TetronimoShape>>,
 
     next_piece: Option<TetronimoShape>,
     piece: Tetronimo,
@@ -154,7 +154,7 @@ impl GameLoop {
     }
 
     fn handle_falling(&mut self) {
-        let (_, shape, width) = self.piece.get_chars();
+        let (shape, width) = self.piece.get_chars();
         if shape
             .iter()
             .enumerate()
@@ -192,7 +192,7 @@ impl GameLoop {
     fn handle_drop(&mut self) {}
 
     fn handle_move_left(&mut self) {
-        let (_, shape, width) = self.piece.get_chars();
+        let (shape, width) = self.piece.get_chars();
         if shape
             .iter()
             .enumerate()
@@ -209,7 +209,7 @@ impl GameLoop {
     }
 
     fn handle_move_right(&mut self) {
-        let (_, shape, width) = self.piece.get_chars();
+        let (shape, width) = self.piece.get_chars();
         if shape
             .iter()
             .enumerate()
@@ -286,12 +286,12 @@ impl GameLoop {
     }
 
     fn add_piece_to_arena(&mut self) {
-        let (ch, blocks, width) = self.piece.get_chars();
+        let (blocks, width) = self.piece.get_chars();
         blocks.iter().enumerate().for_each(|(offset, present)| {
             let x = self.position.x + offset % width;
             let y = self.position.y + offset / width;
             if *present {
-                self.arena[x + (self.arena_size.x * y)] = Some(*ch);
+                self.arena[x + (self.arena_size.x * y)] = Some(self.piece.shape.clone());
             }
         });
     }
@@ -331,30 +331,30 @@ impl GameLoop {
 
     pub(crate) fn draw_piece<F>(&self, mut func: F)
     where
-        F: FnMut(char, LocalPos),
+        F: FnMut(&TetronimoShape, LocalPos),
     {
-        let (character, shape, width) = self.piece.get_chars();
+        let (shape, width) = self.piece.get_chars();
         shape.iter().enumerate().for_each(|(offset, present)| {
             if *present {
                 let x = (offset % width) as u16;
                 let y = (offset / width) as u16;
                 let local_pos = LocalPos::new(x, y);
                 let pos: LocalPos = self.position.clone().into();
-                func(*character, local_pos + pos);
+                func(&self.piece.shape, local_pos + pos);
             }
         });
     }
 
     pub(crate) fn draw_arena<D>(&self, mut draw: D)
     where
-        D: FnMut(Option<char>, LocalPos),
+        D: FnMut(Option<&TetronimoShape>, LocalPos),
     {
         self.arena.iter().enumerate().for_each(|(offset, piece)| {
             let x = offset % self.arena_size.x;
             let y = offset / self.arena_size.x;
             let local_pos = LocalPos::new(x as u16, y as u16);
             match piece {
-                Some(piece) => draw(Some(*piece), local_pos),
+                Some(piece) => draw(Some(piece), local_pos),
                 None => draw(None, local_pos),
             }
         });
@@ -381,7 +381,7 @@ impl GameLoop {
                     // Reached end of the board
                     continue;
                 } else if self.arena[block + self.arena_size.x].is_none() {
-                    self.arena[block + self.arena_size.x] = self.arena[block];
+                    self.arena[block + self.arena_size.x] = self.arena[block].clone();
                     self.arena[block] = None;
                     changed = true;
                 }
@@ -416,6 +416,8 @@ impl From<Position> for LocalPos {
 
 #[cfg(test)]
 mod test {
+    use crate::core::tetronimo::TetronimoShape;
+
     use super::GameLoop;
 
     #[test]
@@ -428,9 +430,9 @@ mod test {
     #[test]
     fn calculate_single_row_at_bottom() {
         let mut under_test = GameLoop::new(3, 2);
-        under_test.arena[3] = Some('x');
-        under_test.arena[4] = Some('x');
-        under_test.arena[5] = Some('x');
+        under_test.arena[3] = Some(TetronimoShape::IShape);
+        under_test.arena[4] = Some(TetronimoShape::IShape);
+        under_test.arena[5] = Some(TetronimoShape::IShape);
 
         assert_eq!(1, under_test.remove_complete_rows());
     }
@@ -438,12 +440,12 @@ mod test {
     #[test]
     fn calculate_all_rows() {
         let mut under_test = GameLoop::new(3, 2);
-        under_test.arena[0] = Some('x');
-        under_test.arena[1] = Some('x');
-        under_test.arena[2] = Some('x');
-        under_test.arena[3] = Some('x');
-        under_test.arena[4] = Some('x');
-        under_test.arena[5] = Some('x');
+        under_test.arena[0] = Some(TetronimoShape::ZShape);
+        under_test.arena[1] = Some(TetronimoShape::ZShape);
+        under_test.arena[2] = Some(TetronimoShape::ZShape);
+        under_test.arena[3] = Some(TetronimoShape::ZShape);
+        under_test.arena[4] = Some(TetronimoShape::ZShape);
+        under_test.arena[5] = Some(TetronimoShape::ZShape);
 
         assert_eq!(2, under_test.remove_complete_rows());
     }
@@ -451,13 +453,13 @@ mod test {
     #[test]
     fn drop_single_block() {
         let mut under_test = GameLoop::new(2, 2);
-        under_test.arena[0] = Some('x');
+        under_test.arena[0] = Some(TetronimoShape::JShape);
 
         under_test.drop_blocks();
 
         assert_eq!(None, under_test.arena[0]);
         assert_eq!(None, under_test.arena[1]);
-        assert_eq!(Some('x'), under_test.arena[2]);
+        assert_eq!(Some(TetronimoShape::JShape), under_test.arena[2]);
         assert_eq!(None, under_test.arena[3]);
     }
 }
