@@ -9,7 +9,7 @@ impl LineCountComponent {}
 
 impl Component for LineCountComponent {
     type State = LineCountState;
-    type Message = LineCountMessage;
+    type Message = LineCountComponentMessage;
 
     fn message(
         &mut self,
@@ -19,7 +19,7 @@ impl Component for LineCountComponent {
         mut _context: anathema::prelude::Context<'_, Self::State>,
     ) {
         match message {
-            LineCountMessage::Count(value) => *state.count.to_mut() = value,
+            LineCountComponentMessage::Count(value) => *state.count.to_mut() = value,
         }
     }
 }
@@ -37,6 +37,7 @@ impl LineCountState {
     }
 }
 
-pub(crate) enum LineCountMessage {
+#[derive(Debug)]
+pub(crate) enum LineCountComponentMessage {
     Count(u16),
 }

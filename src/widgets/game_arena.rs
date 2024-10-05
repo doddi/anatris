@@ -2,28 +2,23 @@ use std::time::Duration;
 
 use anathema::{
     backend::tui::Style,
-    component::{Component, ComponentId, Context},
+    component::{Component, Context},
     default_widgets::Canvas,
     geometry::LocalPos,
     state::{AnyState, List, State, Value},
     widgets::Elements,
 };
+use smol::channel::Sender;
 
 use crate::core::{
     game_loop::{GameAction, GameLoop, MoveActionType},
+    game_state::GameStateManagementMessage,
     tetronimo::TetronimoShape,
 };
 
-use super::{
-    line_count::LineCountMessage, next_piece::NextPieceMessage, scoreboard::ScoreBoardMessage,
-    statistics::StatisticsMessage,
-};
-
 const GLYPH_WIDTH: u16 = 2;
-const CANVAS_WIDTH: u16 = 10;
-const CANVAS_HEIGHT: u16 = 20;
 const MOVE_TICK_DURATION: u64 = 200;
-const FALL_TICK_DURATION: u64 = 50;
+const FALL_TICK_DURATION: u64 = 200;
 
 #[derive(State)]
 pub(crate) struct GameArenaComponentState {
@@ -60,16 +55,12 @@ pub(crate) enum GameArenaComponentMessage {
 }
 
 pub(crate) struct GameArenaComponent {
+    tx: Sender<GameStateManagementMessage>,
     last_fall_update: Duration,
     last_move_update: Duration,
 
     move_requested: MoveActionType,
     game_loop: GameLoop,
-
-    score_board_id: ComponentId<ScoreBoardMessage>,
-    lines_id: ComponentId<LineCountMessage>,
-    next_piece_id: ComponentId<NextPieceMessage>,
-    statistics_id: ComponentId<StatisticsMessage>,
 }
 
 impl From<&TetronimoShape> for char {
@@ -87,24 +78,14 @@ impl From<&TetronimoShape> for char {
 }
 
 impl GameArenaComponent {
-    pub(crate) fn new(
-        score_board_id: ComponentId<ScoreBoardMessage>,
-        lines_id: ComponentId<LineCountMessage>,
-        next_piece_id: ComponentId<NextPieceMessage>,
-        statistics_id: ComponentId<StatisticsMessage>,
-        game_loop: GameLoop,
-    ) -> Self {
+    pub(crate) fn new(tx: Sender<GameStateManagementMessage>, game_loop: GameLoop) -> Self {
         Self {
+            tx,
             last_fall_update: Duration::ZERO,
             last_move_update: Duration::ZERO,
 
             move_requested: MoveActionType::None,
             game_loop,
-
-            score_board_id,
-            lines_id,
-            next_piece_id,
-            statistics_id,
         }
     }
 
@@ -133,7 +114,7 @@ impl GameArenaComponent {
         &mut self,
         _state: &mut GameArenaComponentState,
         mut elements: Elements,
-        context: &Context<'_, GameArenaComponentState>,
+        _context: &Context<'_, GameArenaComponentState>,
         dt: Duration,
     ) {
         self.last_fall_update += dt;
@@ -162,10 +143,28 @@ impl GameArenaComponent {
         }
 
         self.game_loop.do_state_machine(
-            |score| context.emit(self.score_board_id, ScoreBoardMessage::Score(score)),
-            |score| context.emit(self.lines_id, LineCountMessage::Count(score)),
-            |shape| context.emit(self.next_piece_id, NextPieceMessage::new(shape)),
-            |statistics| context.emit(self.statistics_id, statistics.into()),
+            |score| {
+                let _ = self
+                    .tx
+                    .try_send(GameStateManagementMessage::UpdateScore(score));
+            },
+            |score| {
+                let _ = self
+                    .tx
+                    .try_send(GameStateManagementMessage::UpdateLines(score));
+            },
+            |shape| {
+                let _ = self
+                    .tx
+                    .try_send(GameStateManagementMessage::UpdateNextTetronimo(shape));
+            },
+            |statistics| {
+                let _ = self
+                    .tx
+                    .try_send(GameStateManagementMessage::UpdateStatistics(
+                        statistics.into(),
+                    ));
+            },
         );
 
         elements.by_tag("canvas").first(|el, _| {

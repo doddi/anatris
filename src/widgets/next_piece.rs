@@ -10,7 +10,7 @@ impl NextPieceComponent {}
 
 impl Component for NextPieceComponent {
     type State = NextPieceState;
-    type Message = NextPieceMessage;
+    type Message = NextPieceComponentMessage;
 
     fn message(
         &mut self,
@@ -50,11 +50,12 @@ impl NextPieceState {
     }
 }
 
-pub(crate) struct NextPieceMessage {
+#[derive(Debug)]
+pub(crate) struct NextPieceComponentMessage {
     shape: TetronimoShape,
 }
 
-impl NextPieceMessage {
+impl NextPieceComponentMessage {
     pub(crate) fn new(shape: TetronimoShape) -> Self {
         Self { shape }
     }

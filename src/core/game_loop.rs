@@ -447,14 +447,16 @@ mod test {
 
     #[test]
     fn calculate_rows_when_empty() {
-        let mut under_test = GameLoop::new(2, 2);
+        let (tx, _rx) = smol::channel::unbounded();
+        let mut under_test = GameLoop::new(2, 2, tx);
 
         assert_eq!(0, under_test.remove_complete_rows());
     }
 
     #[test]
     fn calculate_single_row_at_bottom() {
-        let mut under_test = GameLoop::new(3, 2);
+        let (tx, _rx) = smol::channel::unbounded();
+        let mut under_test = GameLoop::new(3, 2, tx);
         under_test.arena[3] = Some(TetronimoShape::IShape);
         under_test.arena[4] = Some(TetronimoShape::IShape);
         under_test.arena[5] = Some(TetronimoShape::IShape);
@@ -464,7 +466,8 @@ mod test {
 
     #[test]
     fn calculate_all_rows() {
-        let mut under_test = GameLoop::new(3, 2);
+        let (tx, _rx) = smol::channel::unbounded();
+        let mut under_test = GameLoop::new(3, 2, tx);
         under_test.arena[0] = Some(TetronimoShape::ZShape);
         under_test.arena[1] = Some(TetronimoShape::ZShape);
         under_test.arena[2] = Some(TetronimoShape::ZShape);
@@ -477,7 +480,8 @@ mod test {
 
     #[test]
     fn drop_single_block() {
-        let mut under_test = GameLoop::new(2, 2);
+        let (tx, _rx) = smol::channel::unbounded();
+        let mut under_test = GameLoop::new(2, 2, tx);
         under_test.arena[0] = Some(TetronimoShape::JShape);
 
         under_test.drop_blocks();

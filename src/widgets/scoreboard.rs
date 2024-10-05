@@ -8,8 +8,8 @@ pub(crate) struct ScoreBoardComponent;
 impl ScoreBoardComponent {}
 
 impl Component for ScoreBoardComponent {
-    type State = ScoreBoardState;
-    type Message = ScoreBoardMessage;
+    type State = ScoreBoardComponentState;
+    type Message = ScoreBoardComponentMessage;
 
     fn message(
         &mut self,
@@ -19,17 +19,17 @@ impl Component for ScoreBoardComponent {
         mut _context: anathema::prelude::Context<'_, Self::State>,
     ) {
         match message {
-            ScoreBoardMessage::Score(value) => *state.current_score.to_mut() = value,
+            ScoreBoardComponentMessage::Score(value) => *state.current_score.to_mut() = value,
         }
     }
 }
 
 #[derive(State)]
-pub(crate) struct ScoreBoardState {
+pub(crate) struct ScoreBoardComponentState {
     current_score: Value<u16>,
 }
 
-impl ScoreBoardState {
+impl ScoreBoardComponentState {
     pub(crate) fn new() -> Self {
         Self {
             current_score: Value::new(0),
@@ -37,6 +37,6 @@ impl ScoreBoardState {
     }
 }
 
-pub(crate) enum ScoreBoardMessage {
+pub(crate) enum ScoreBoardComponentMessage {
     Score(u16),
 }

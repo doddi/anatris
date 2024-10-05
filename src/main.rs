@@ -8,7 +8,7 @@ use anathema::{
 };
 use core::{
     game_loop::GameLoop,
-    game_state::{self, GameStateManagementMessage},
+    game_state::{self, GameStateComponentIds, GameStateManagementMessage},
 };
 use smol::channel::Sender;
 use std::fs::read_to_string;
@@ -20,7 +20,7 @@ use widgets::{
     line_count::{LineCountComponent, LineCountState},
     main_menu::{MainMenuComponent, MainMenuComponentState},
     next_piece::{NextPieceComponent, NextPieceState},
-    scoreboard::{ScoreBoardComponent, ScoreBoardState},
+    scoreboard::{ScoreBoardComponent, ScoreBoardComponentState},
     static_piece::{StaticPieceComponent, StaticPieceState},
     statistic::{StatisticComponent, StatisticComponentState},
     statistics::{StatisticsComponent, StatisticsState},
@@ -66,7 +66,7 @@ fn main() {
             "ScoreBoard",
             "src/templates/scoreboard.aml",
             ScoreBoardComponent {},
-            ScoreBoardState::new(),
+            ScoreBoardComponentState::new(),
         )
         .unwrap();
 
@@ -119,13 +119,7 @@ fn main() {
         .register_component(
             "GameArena",
             "src/templates/game_arena.aml",
-            GameArenaComponent::new(
-                score_board_id,
-                lines_count_id,
-                next_piece_id,
-                statistics_id,
-                game_loop,
-            ),
+            GameArenaComponent::new(tx.clone(), game_loop),
             GameArenaComponentState::new(),
         )
         .unwrap();
@@ -151,14 +145,18 @@ fn main() {
     let runtime = runtime.set_global_event_handler(GlobalEventHandler::new(tx));
 
     let emitter = runtime.emitter().clone();
-    game_state::start(
-        emitter,
-        rx,
+    let component_ids = GameStateComponentIds::new(
         main_menu_id,
         game_id,
         game_arena_id,
         game_over_id,
+        score_board_id,
+        lines_count_id,
+        next_piece_id,
+        statistics_id,
     );
+
+    game_state::start(emitter, rx, component_ids);
     runtime.finish().unwrap().run();
 }
 

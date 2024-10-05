@@ -5,16 +5,54 @@ use crate::widgets::{
     game::GameComponentMessage,
     game_arena::GameArenaComponentMessage,
     game_over::GameOverComponentMessage,
+    line_count::LineCountComponentMessage,
     main_menu::{MainMenuComponentMessage, MainMenuComponentSelection},
+    next_piece::NextPieceComponentMessage,
+    scoreboard::ScoreBoardComponentMessage,
+    statistics::StatisticsComponentMessage,
 };
 
-pub(crate) fn start(
-    emitter: anathema::component::Emitter,
-    rx: Receiver<GameStateManagementMessage>,
+use super::tetronimo::TetronimoShape;
+
+pub(crate) struct GameStateComponentIds {
     main_menu_id: ComponentId<MainMenuComponentMessage>,
     game_id: ComponentId<GameComponentMessage>,
     game_arena_id: ComponentId<GameArenaComponentMessage>,
     game_over_id: ComponentId<GameOverComponentMessage>,
+    score_board_id: ComponentId<ScoreBoardComponentMessage>,
+    lines_count_id: ComponentId<LineCountComponentMessage>,
+    next_piece_id: ComponentId<NextPieceComponentMessage>,
+    statistics_id: ComponentId<StatisticsComponentMessage>,
+}
+
+impl GameStateComponentIds {
+    pub(crate) fn new(
+        main_menu_id: ComponentId<MainMenuComponentMessage>,
+        game_id: ComponentId<GameComponentMessage>,
+        game_arena_id: ComponentId<GameArenaComponentMessage>,
+        game_over_id: ComponentId<GameOverComponentMessage>,
+        score_board_id: ComponentId<ScoreBoardComponentMessage>,
+        lines_count_id: ComponentId<LineCountComponentMessage>,
+        next_piece_id: ComponentId<NextPieceComponentMessage>,
+        statistics_id: ComponentId<StatisticsComponentMessage>,
+    ) -> Self {
+        Self {
+            main_menu_id,
+            game_id,
+            game_arena_id,
+            game_over_id,
+            score_board_id,
+            lines_count_id,
+            next_piece_id,
+            statistics_id,
+        }
+    }
+}
+
+pub(crate) fn start(
+    emitter: anathema::component::Emitter,
+    rx: Receiver<GameStateManagementMessage>,
+    game_state_component_ids: GameStateComponentIds,
 ) {
     smol::spawn(async move {
         let mut main_menu_choice = MainMenuChoice::Start;
@@ -23,52 +61,148 @@ pub(crate) fn start(
         while let Ok(message) = rx.recv().await {
             match message {
                 GameStateManagementMessage::MainMenu => {
-                    let _ = emitter.emit(main_menu_id, MainMenuComponentMessage::Visible);
-                    let _ = emitter.emit(game_id, GameComponentMessage::Invisible);
-                    let _ = emitter.emit(game_id, GameComponentMessage::Paused);
-                    let _ = emitter.emit(game_over_id, GameOverComponentMessage::Invisible);
+                    let _ = emitter.emit(
+                        game_state_component_ids.main_menu_id,
+                        MainMenuComponentMessage::Visible,
+                    );
+                    let _ = emitter.emit(
+                        game_state_component_ids.game_id,
+                        GameComponentMessage::Invisible,
+                    );
+                    let _ = emitter.emit(
+                        game_state_component_ids.game_id,
+                        GameComponentMessage::Paused,
+                    );
+                    let _ = emitter.emit(
+                        game_state_component_ids.game_over_id,
+                        GameOverComponentMessage::Invisible,
+                    );
                     state = message.into();
                 }
                 GameStateManagementMessage::Paused => {
-                    let _ = emitter.emit(main_menu_id, MainMenuComponentMessage::Invisible);
-                    let _ = emitter.emit(game_id, GameComponentMessage::Visible);
-                    let _ = emitter.emit(game_id, GameComponentMessage::Paused);
-                    let _ = emitter.emit(game_over_id, GameOverComponentMessage::Invisible);
+                    let _ = emitter.emit(
+                        game_state_component_ids.main_menu_id,
+                        MainMenuComponentMessage::Invisible,
+                    );
+                    let _ = emitter.emit(
+                        game_state_component_ids.game_id,
+                        GameComponentMessage::Visible,
+                    );
+                    let _ = emitter.emit(
+                        game_state_component_ids.game_id,
+                        GameComponentMessage::Paused,
+                    );
+                    let _ = emitter.emit(
+                        game_state_component_ids.game_over_id,
+                        GameOverComponentMessage::Invisible,
+                    );
                     state = message.into();
                 }
                 GameStateManagementMessage::Playing => {
-                    let _ = emitter.emit(main_menu_id, MainMenuComponentMessage::Invisible);
-                    let _ = emitter.emit(game_id, GameComponentMessage::Visible);
-                    let _ = emitter.emit(game_id, GameComponentMessage::Running);
-                    let _ = emitter.emit(game_over_id, GameOverComponentMessage::Invisible);
+                    let _ = emitter.emit(
+                        game_state_component_ids.main_menu_id,
+                        MainMenuComponentMessage::Invisible,
+                    );
+                    let _ = emitter.emit(
+                        game_state_component_ids.game_id,
+                        GameComponentMessage::Visible,
+                    );
+                    let _ = emitter.emit(
+                        game_state_component_ids.game_id,
+                        GameComponentMessage::Running,
+                    );
+                    let _ = emitter.emit(
+                        game_state_component_ids.game_over_id,
+                        GameOverComponentMessage::Invisible,
+                    );
                     state = message.into();
                 }
                 GameStateManagementMessage::GameOver => {
-                    let _ = emitter.emit(main_menu_id, MainMenuComponentMessage::Invisible);
-                    let _ = emitter.emit(game_id, GameComponentMessage::Invisible);
-                    let _ = emitter.emit(game_over_id, GameOverComponentMessage::Visible);
+                    let _ = emitter.emit(
+                        game_state_component_ids.main_menu_id,
+                        MainMenuComponentMessage::Invisible,
+                    );
+                    let _ = emitter.emit(
+                        game_state_component_ids.game_id,
+                        GameComponentMessage::Invisible,
+                    );
+                    let _ = emitter.emit(
+                        game_state_component_ids.game_over_id,
+                        GameOverComponentMessage::Visible,
+                    );
                     state = message.into();
                 }
                 GameStateManagementMessage::Event(event) => match state {
                     GameState::MainMenu => handle_main_menu(
-                        game_id,
-                        game_over_id,
-                        main_menu_id,
+                        game_state_component_ids.game_id,
+                        game_state_component_ids.game_over_id,
+                        game_state_component_ids.main_menu_id,
                         &mut main_menu_choice,
                         event,
                         &mut state,
                         &emitter,
                     ),
                     GameState::Paused => handle_pause(event, &mut state),
-                    GameState::Playing => {
-                        handle_playing(event, &emitter, &mut state, game_arena_id)
-                    }
+                    GameState::Playing => handle_playing(
+                        event,
+                        &emitter,
+                        &mut state,
+                        game_state_component_ids.game_arena_id,
+                    ),
                     GameState::GameOver => handle_game_over(),
                 },
+                GameStateManagementMessage::UpdateScore(score) => {
+                    handle_update_score(&emitter, score, game_state_component_ids.score_board_id)
+                }
+                GameStateManagementMessage::UpdateLines(value) => {
+                    handle_update_lines(&emitter, value, game_state_component_ids.lines_count_id)
+                }
+                GameStateManagementMessage::UpdateNextTetronimo(tetronimo) => {
+                    handle_update_next_tetronimo(
+                        &emitter,
+                        game_state_component_ids.next_piece_id,
+                        tetronimo,
+                    )
+                }
+                GameStateManagementMessage::UpdateStatistics(data) => {
+                    handle_update_statistics(&emitter, game_state_component_ids.statistics_id, data)
+                }
             }
         }
     })
     .detach();
+}
+
+fn handle_update_statistics(
+    emitter: &Emitter,
+    statistics_id: ComponentId<StatisticsComponentMessage>,
+    data: StatisticsComponentMessage,
+) {
+    let _ = emitter.emit(statistics_id, data);
+}
+
+fn handle_update_next_tetronimo(
+    emitter: &Emitter,
+    next_piece_id: ComponentId<NextPieceComponentMessage>,
+    tetronimo: TetronimoShape,
+) {
+    let _ = emitter.emit(next_piece_id, NextPieceComponentMessage::new(tetronimo));
+}
+
+fn handle_update_lines(
+    emitter: &Emitter,
+    value: u16,
+    lines_count_id: ComponentId<LineCountComponentMessage>,
+) {
+    let _ = emitter.emit(lines_count_id, LineCountComponentMessage::Count(value));
+}
+
+fn handle_update_score(
+    emitter: &Emitter,
+    score: u16,
+    score_board_id: ComponentId<ScoreBoardComponentMessage>,
+) {
+    let _ = emitter.emit(score_board_id, ScoreBoardComponentMessage::Score(score));
 }
 
 fn handle_main_menu(
@@ -211,6 +345,10 @@ pub(crate) enum GameStateManagementMessage {
     Playing,
     GameOver,
     Event(anathema::component::Event),
+    UpdateScore(u16),
+    UpdateLines(u16),
+    UpdateNextTetronimo(TetronimoShape),
+    UpdateStatistics(StatisticsComponentMessage),
 }
 
 #[derive(Default, Debug)]
@@ -229,7 +367,7 @@ impl From<GameStateManagementMessage> for GameState {
             GameStateManagementMessage::Paused => GameState::Paused,
             GameStateManagementMessage::Playing => GameState::Playing,
             GameStateManagementMessage::GameOver => GameState::GameOver,
-            GameStateManagementMessage::Event(_) => {
+            _ => {
                 panic!("Key handling state is not a valid state to transition to")
             }
         }

@@ -11,7 +11,7 @@ impl StatisticsComponent {}
 
 impl Component for StatisticsComponent {
     type State = StatisticsState;
-    type Message = StatisticsMessage;
+    type Message = StatisticsComponentMessage;
 
     fn message(
         &mut self,
@@ -57,7 +57,7 @@ impl StatisticsState {
 }
 
 #[derive(Debug)]
-pub(crate) struct StatisticsMessage {
+pub(crate) struct StatisticsComponentMessage {
     i_stat: u16,
     j_stat: u16,
     l_stat: u16,
@@ -67,7 +67,7 @@ pub(crate) struct StatisticsMessage {
     z_stat: u16,
 }
 
-impl StatisticsMessage {
+impl StatisticsComponentMessage {
     pub(crate) fn new(i: u16, j: u16, l: u16, o: u16, t: u16, s: u16, z: u16) -> Self {
         Self {
             i_stat: i,
@@ -81,9 +81,9 @@ impl StatisticsMessage {
     }
 }
 
-impl From<ShapeStatistics> for StatisticsMessage {
+impl From<ShapeStatistics> for StatisticsComponentMessage {
     fn from(value: ShapeStatistics) -> Self {
-        StatisticsMessage::new(
+        StatisticsComponentMessage::new(
             value.i_count,
             value.j_count,
             value.l_count,
