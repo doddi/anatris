@@ -7,7 +7,6 @@ pub(crate) struct GameLoop {
 
     next_piece: Option<TetronimoShape>,
     piece: Tetronimo,
-    old_piece: Option<Tetronimo>,
 
     position: Position,
     old_position: Position,
@@ -66,7 +65,6 @@ impl GameLoop {
 
             next_piece: None,
             piece: Tetronimo::random(),
-            old_piece: None,
             position: Position::new(0, 0),
             old_position: Position::new(0, 0),
             arena_size: Position::new(arena_width, arena_height),
@@ -112,7 +110,6 @@ impl GameLoop {
         T: FnMut(ShapeStatistics),
     {
         self.old_position = self.position.clone();
-        self.old_piece = Some(self.piece.clone());
         match self.game_state {
             GameState::Paused => (),
             GameState::Start => {
@@ -123,11 +120,11 @@ impl GameLoop {
             GameState::Moving(game_move_type) => {
                 self.handle_movement_state(&game_move_type);
             }
-            GameState::PieceBlocked => self.handle_piece_blocked(update_next, update_statistics),
+            GameState::PieceBlocked => self.handle_piece_blocked(),
             GameState::CheckRows => {
                 self.handle_check_rows(update_score, update_line, update_statistics)
             }
-            GameState::CheckGameOver => self.handle_check_game_over(),
+            GameState::CheckGameOver => self.handle_check_game_over(update_next, update_statistics),
             GameState::GameOver => self.handle_game_over(),
         }
     }
@@ -225,13 +222,8 @@ impl GameLoop {
         }
     }
 
-    fn handle_piece_blocked<P, T>(&mut self, update_next_piece: P, update_statistics: T)
-    where
-        P: FnMut(TetronimoShape),
-        T: FnMut(ShapeStatistics),
-    {
+    fn handle_piece_blocked(&mut self) {
         self.add_piece_to_arena();
-        self.create_new_piece(update_next_piece, update_statistics);
         self.game_state = GameState::CheckRows;
     }
 
@@ -277,12 +269,31 @@ impl GameLoop {
         complete_row
     }
 
-    fn handle_check_game_over(&mut self) {
-        self.game_state = GameState::Running;
+    fn handle_check_game_over<P, T>(&mut self, update_next_piece: P, update_statistics: T)
+    where
+        P: FnMut(TetronimoShape),
+        T: FnMut(ShapeStatistics),
+    {
+        self.create_new_piece(update_next_piece, update_statistics);
+        let (blocks, width) = self.piece.get_chars();
+        let mut overlap = false;
+        blocks.iter().enumerate().for_each(|(offset, present)| {
+            let x = self.position.x + offset % width;
+            let y = self.position.y + offset / width;
+            if *present && self.arena[x + (self.arena_size.x * y)].is_some() {
+                overlap = true;
+            }
+        });
+
+        if overlap {
+            self.game_state = GameState::GameOver;
+        } else {
+            self.game_state = GameState::Running;
+        }
     }
 
-    fn handle_game_over(&self) {
-        todo!()
+    fn handle_game_over(&mut self) {
+        println!("Game over!");
     }
 
     fn add_piece_to_arena(&mut self) {
