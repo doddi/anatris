@@ -142,7 +142,7 @@ fn main() {
         )
         .unwrap();
 
-    let runtime = runtime.set_global_event_handler(GlobalEventHandler::new(tx));
+    let runtime = runtime.set_global_event_handler(GlobalEventHandler::new(tx.clone()));
 
     let emitter = runtime.emitter().clone();
     let component_ids = GameStateComponentIds::new(
@@ -156,7 +156,7 @@ fn main() {
         statistics_id,
     );
 
-    game_state::start(emitter, rx, component_ids);
+    game_state::start(emitter, tx, rx, component_ids);
     runtime.finish().unwrap().run();
 }
 

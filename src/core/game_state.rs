@@ -1,5 +1,5 @@
 use anathema::component::{ComponentId, Emitter, KeyCode, KeyEvent};
-use smol::channel::Receiver;
+use smol::channel::{Receiver, Sender};
 
 use crate::widgets::{
     game::GameComponentMessage,
@@ -25,6 +25,7 @@ pub(crate) struct GameStateComponentIds {
     statistics_id: ComponentId<StatisticsComponentMessage>,
 }
 
+#[allow(clippy::too_many_arguments)]
 impl GameStateComponentIds {
     pub(crate) fn new(
         main_menu_id: ComponentId<MainMenuComponentMessage>,
@@ -51,6 +52,7 @@ impl GameStateComponentIds {
 
 pub(crate) fn start(
     emitter: anathema::component::Emitter,
+    tx: Sender<GameStateManagementMessage>,
     rx: Receiver<GameStateManagementMessage>,
     game_state_component_ids: GameStateComponentIds,
 ) {
@@ -142,13 +144,10 @@ pub(crate) fn start(
                         &mut state,
                         &emitter,
                     ),
-                    GameState::Paused => handle_pause(event, &mut state),
-                    GameState::Playing => handle_playing(
-                        event,
-                        &emitter,
-                        &mut state,
-                        game_state_component_ids.game_arena_id,
-                    ),
+                    GameState::Paused => handle_pause(event, &tx),
+                    GameState::Playing => {
+                        handle_playing(event, &tx, &emitter, game_state_component_ids.game_arena_id)
+                    }
                     GameState::GameOver => handle_game_over(),
                 },
                 GameStateManagementMessage::UpdateScore(score) => {
@@ -254,7 +253,7 @@ fn handle_main_menu(
     }
 }
 
-fn handle_pause(event: anathema::component::Event, state: &mut GameState) {
+fn handle_pause(event: anathema::component::Event, tx: &Sender<GameStateManagementMessage>) {
     if let anathema::component::Event::Key(keyevent) = event {
         let KeyEvent {
             code,
@@ -263,17 +262,17 @@ fn handle_pause(event: anathema::component::Event, state: &mut GameState) {
         } = keyevent;
 
         if let KeyCode::Esc = code {
-            *state = GameState::Playing;
+            tx.try_send(GameStateManagementMessage::Playing);
         } else if let KeyCode::Enter = code {
-            *state = GameState::MainMenu;
+            tx.try_send(GameStateManagementMessage::MainMenu);
         }
     }
 }
 
 fn handle_playing(
     event: anathema::component::Event,
-    tx: &Emitter,
-    state: &mut GameState,
+    tx: &Sender<GameStateManagementMessage>,
+    emitter: &Emitter,
     game_arena: ComponentId<GameArenaComponentMessage>,
 ) {
     if let anathema::component::Event::Key(keyevent) = event {
@@ -285,19 +284,19 @@ fn handle_playing(
 
         match code {
             KeyCode::Esc => {
-                *state = GameState::Paused;
+                tx.try_send(GameStateManagementMessage::Paused);
             }
             KeyCode::Char(' ') => {
-                let _ = tx.emit(game_arena, GameArenaComponentMessage::Rotate);
+                let _ = emitter.emit(game_arena, GameArenaComponentMessage::Rotate);
             }
             KeyCode::Char('a') => {
-                let _ = tx.emit(game_arena, GameArenaComponentMessage::MoveLeft);
+                let _ = emitter.emit(game_arena, GameArenaComponentMessage::MoveLeft);
             }
             KeyCode::Char('d') => {
-                let _ = tx.emit(game_arena, GameArenaComponentMessage::MoveRight);
+                let _ = emitter.emit(game_arena, GameArenaComponentMessage::MoveRight);
             }
             KeyCode::Char('s') => {
-                let _ = tx.emit(game_arena, GameArenaComponentMessage::Drop);
+                let _ = emitter.emit(game_arena, GameArenaComponentMessage::Drop);
             }
             _ => (),
         }
