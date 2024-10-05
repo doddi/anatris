@@ -22,23 +22,29 @@ impl Component for MainMenuComponent {
         match message {
             MainMenuComponentMessage::Visible => *state.visible.to_mut() = true,
             MainMenuComponentMessage::Invisible => *state.visible.to_mut() = false,
-            MainMenuComponentMessage::KeyUp => toggle_highlight(state),
-            MainMenuComponentMessage::KeyDown => toggle_highlight(state),
+            MainMenuComponentMessage::ChangeTo(selection) => toggle_highlight(state, selection),
         }
     }
 }
 
-fn toggle_highlight(state: &mut MainMenuComponentState) {
-    let current = *state.start_highlighted.to_ref();
-    *state.start_highlighted.to_mut() = !current;
+fn toggle_highlight(state: &mut MainMenuComponentState, selection: MainMenuComponentSelection) {
+    match selection {
+        MainMenuComponentSelection::Start => *state.start_highlighted.to_mut() = true,
+        MainMenuComponentSelection::Exit => *state.start_highlighted.to_mut() = false,
+    }
+}
+
+#[derive(Debug)]
+pub(crate) enum MainMenuComponentSelection {
+    Start,
+    Exit,
 }
 
 #[derive(Debug)]
 pub(crate) enum MainMenuComponentMessage {
     Visible,
     Invisible,
-    KeyUp,
-    KeyDown,
+    ChangeTo(MainMenuComponentSelection),
 }
 
 #[derive(State)]

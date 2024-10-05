@@ -6,13 +6,16 @@ use anathema::{
     prelude::*,
     widgets::components::events::KeyState,
 };
-use std::fs::read_to_string;
+use std::{alloc::System, fs::read_to_string};
 use widgets::{
     game::{GameComponent, GameComponentMessage, GameComponentState},
     game_arena::{GameArenaComponent, GameArenaComponentMessage, GameArenaComponentState},
     game_type::{GameTypeComponent, GameTypeState},
     line_count::{LineCountComponent, LineCountState},
-    main_menu::{MainMenuComponent, MainMenuComponentMessage, MainMenuComponentState},
+    main_menu::{
+        MainMenuComponent, MainMenuComponentMessage, MainMenuComponentSelection,
+        MainMenuComponentState,
+    },
     next_piece::{NextPieceComponent, NextPieceState},
     scoreboard::{ScoreBoardComponent, ScoreBoardState},
     static_piece::{StaticPieceComponent, StaticPieceState},
@@ -129,6 +132,37 @@ fn main() {
     runtime.finish().unwrap().run();
 }
 
+#[derive(Clone)]
+enum MainMenuChoice {
+    Start,
+    Exit,
+}
+
+impl MainMenuChoice {
+    fn up(&mut self) -> Self {
+        match self {
+            MainMenuChoice::Start => MainMenuChoice::Exit,
+            MainMenuChoice::Exit => MainMenuChoice::Start,
+        }
+    }
+
+    fn down(&mut self) -> Self {
+        match self {
+            MainMenuChoice::Start => MainMenuChoice::Exit,
+            MainMenuChoice::Exit => MainMenuChoice::Start,
+        }
+    }
+}
+
+impl From<MainMenuChoice> for MainMenuComponentSelection {
+    fn from(value: MainMenuChoice) -> Self {
+        match value {
+            MainMenuChoice::Start => MainMenuComponentSelection::Start,
+            MainMenuChoice::Exit => MainMenuComponentSelection::Exit,
+        }
+    }
+}
+
 #[derive(Default)]
 enum GameState {
     #[default]
@@ -140,7 +174,10 @@ enum GameState {
 
 struct GameStateManagement<'a> {
     state: GameState,
+
     main_menu: &'a ComponentId<MainMenuComponentMessage>,
+    main_menu_choice: MainMenuChoice,
+
     game: &'a ComponentId<GameComponentMessage>,
     game_arena: &'a ComponentId<GameArenaComponentMessage>,
 }
@@ -174,6 +211,7 @@ impl<'a> GameStateManagement<'a> {
         Self {
             state: GameState::default(),
             main_menu,
+            main_menu_choice: MainMenuChoice::Start,
             game,
             game_arena,
         }
@@ -201,29 +239,38 @@ impl<'a> GameStateManagement<'a> {
         event: anathema::component::Event,
         ctx: &mut GlobalContext<'_>,
     ) -> Option<anathema::component::Event> {
-        // TODO: How to actually exit now that I have taken over the handler
-        // only the widget itself knows that it has highlighted Exit
         if let anathema::component::Event::Key(keyevent) = event {
             match keyevent {
                 KeyEvent {
                     code: KeyCode::Enter,
                     ..
-                } => {
-                    ctx.emit(*self.main_menu, MainMenuComponentMessage::Invisible);
-                    ctx.emit(*self.game, GameComponentMessage::Visible);
-                    self.state = GameState::Playing;
-                }
+                } => match self.main_menu_choice {
+                    MainMenuChoice::Start => {
+                        ctx.emit(*self.main_menu, MainMenuComponentMessage::Invisible);
+                        ctx.emit(*self.game, GameComponentMessage::Visible);
+                        self.state = GameState::Playing;
+                    }
+                    MainMenuChoice::Exit => std::process::exit(0),
+                },
                 KeyEvent {
                     code: KeyCode::Char('w'),
                     ..
                 } => {
-                    ctx.emit(*self.main_menu, MainMenuComponentMessage::KeyUp);
+                    self.main_menu_choice = self.main_menu_choice.up();
+                    ctx.emit(
+                        *self.main_menu,
+                        MainMenuComponentMessage::ChangeTo(self.main_menu_choice.clone().into()),
+                    );
                 }
                 KeyEvent {
                     code: KeyCode::Char('s'),
                     ..
                 } => {
-                    ctx.emit(*self.main_menu, MainMenuComponentMessage::KeyDown);
+                    self.main_menu_choice = self.main_menu_choice.down();
+                    ctx.emit(
+                        *self.main_menu,
+                        MainMenuComponentMessage::ChangeTo(self.main_menu_choice.clone().into()),
+                    );
                 }
                 _ => (),
             }
