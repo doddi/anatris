@@ -23,7 +23,7 @@ const GLYPH_WIDTH: u16 = 2;
 const CANVAS_WIDTH: u16 = 10;
 const CANVAS_HEIGHT: u16 = 20;
 const MOVE_TICK_DURATION: u64 = 200;
-const FALL_TICK_DURATION: u64 = 500;
+const FALL_TICK_DURATION: u64 = 50;
 
 #[derive(State)]
 pub(crate) struct GameArenaComponentState {
@@ -92,13 +92,14 @@ impl GameArenaComponent {
         lines_id: ComponentId<LineCountMessage>,
         next_piece_id: ComponentId<NextPieceMessage>,
         statistics_id: ComponentId<StatisticsMessage>,
+        game_loop: GameLoop,
     ) -> Self {
         Self {
             last_fall_update: Duration::ZERO,
             last_move_update: Duration::ZERO,
 
             move_requested: MoveActionType::None,
-            game_loop: GameLoop::new(CANVAS_WIDTH as usize, CANVAS_HEIGHT as usize),
+            game_loop,
 
             score_board_id,
             lines_id,

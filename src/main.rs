@@ -2,20 +2,23 @@ mod core;
 mod widgets;
 
 use anathema::{
-    component::{ComponentId, KeyCode, KeyEvent},
+    component::{KeyCode, KeyEvent},
     prelude::*,
     widgets::components::events::KeyState,
 };
-use std::{alloc::System, fs::read_to_string};
+use core::{
+    game_loop::GameLoop,
+    game_state::{self, GameStateManagementMessage},
+};
+use smol::channel::Sender;
+use std::fs::read_to_string;
 use widgets::{
-    game::{GameComponent, GameComponentMessage, GameComponentState},
-    game_arena::{GameArenaComponent, GameArenaComponentMessage, GameArenaComponentState},
+    game::{GameComponent, GameComponentState},
+    game_arena::{GameArenaComponent, GameArenaComponentState},
+    game_over::{GameOverComponent, GameOverComponentState},
     game_type::{GameTypeComponent, GameTypeState},
     line_count::{LineCountComponent, LineCountState},
-    main_menu::{
-        MainMenuComponent, MainMenuComponentMessage, MainMenuComponentSelection,
-        MainMenuComponentState,
-    },
+    main_menu::{MainMenuComponent, MainMenuComponentState},
     next_piece::{NextPieceComponent, NextPieceState},
     scoreboard::{ScoreBoardComponent, ScoreBoardState},
     static_piece::{StaticPieceComponent, StaticPieceState},
@@ -28,6 +31,9 @@ fn main() {
 
     let doc = Document::new(template);
 
+    let (tx, rx) = smol::channel::unbounded::<GameStateManagementMessage>();
+    let game_loop = GameLoop::new(10, 20, tx.clone());
+
     let backend = TuiBackend::builder()
         .enable_alt_screen()
         .enable_raw_mode()
@@ -37,7 +43,7 @@ fn main() {
 
     let mut runtime = Runtime::builder(doc, backend);
 
-    let main_menu = runtime
+    let main_menu_id = runtime
         .register_component(
             "MainMenu",
             "src/templates/main_menu.aml",
@@ -46,7 +52,7 @@ fn main() {
         )
         .unwrap();
 
-    let game = runtime
+    let game_id = runtime
         .register_component(
             "Game",
             "src/templates/game.aml",
@@ -109,11 +115,17 @@ fn main() {
         )
         .unwrap();
 
-    let game_arena = runtime
+    let game_arena_id = runtime
         .register_component(
             "GameArena",
             "src/templates/game_arena.aml",
-            GameArenaComponent::new(score_board_id, lines_count_id, next_piece_id, statistics_id),
+            GameArenaComponent::new(
+                score_board_id,
+                lines_count_id,
+                next_piece_id,
+                statistics_id,
+                game_loop,
+            ),
             GameArenaComponentState::new(),
         )
         .unwrap();
@@ -127,94 +139,51 @@ fn main() {
         )
         .unwrap();
 
-    let runtime =
-        runtime.set_global_event_handler(GameStateManagement::new(&main_menu, &game, &game_arena));
+    let game_over_id = runtime
+        .register_component(
+            "GameOver",
+            "src/templates/game_over.aml",
+            GameOverComponent::new(tx.clone()),
+            GameOverComponentState::new(),
+        )
+        .unwrap();
+
+    let runtime = runtime.set_global_event_handler(GlobalEventHandler::new(tx));
+
+    let emitter = runtime.emitter().clone();
+    game_state::start(
+        emitter,
+        rx,
+        main_menu_id,
+        game_id,
+        game_arena_id,
+        game_over_id,
+    );
     runtime.finish().unwrap().run();
 }
 
-#[derive(Clone)]
-enum MainMenuChoice {
-    Start,
-    Exit,
+struct GlobalEventHandler {
+    tx: Sender<GameStateManagementMessage>,
 }
 
-impl MainMenuChoice {
-    fn up(&mut self) -> Self {
-        match self {
-            MainMenuChoice::Start => MainMenuChoice::Exit,
-            MainMenuChoice::Exit => MainMenuChoice::Start,
-        }
-    }
-
-    fn down(&mut self) -> Self {
-        match self {
-            MainMenuChoice::Start => MainMenuChoice::Exit,
-            MainMenuChoice::Exit => MainMenuChoice::Start,
-        }
-    }
-}
-
-impl From<MainMenuChoice> for MainMenuComponentSelection {
-    fn from(value: MainMenuChoice) -> Self {
-        match value {
-            MainMenuChoice::Start => MainMenuComponentSelection::Start,
-            MainMenuChoice::Exit => MainMenuComponentSelection::Exit,
-        }
-    }
-}
-
-#[derive(Default)]
-enum GameState {
-    #[default]
-    MainMenu,
-    Paused,
-    Playing,
-    GameOver,
-}
-
-struct GameStateManagement<'a> {
-    state: GameState,
-
-    main_menu: &'a ComponentId<MainMenuComponentMessage>,
-    main_menu_choice: MainMenuChoice,
-
-    game: &'a ComponentId<GameComponentMessage>,
-    game_arena: &'a ComponentId<GameArenaComponentMessage>,
-}
-
-impl<'a> GlobalEvents for GameStateManagement<'a> {
+impl GlobalEvents for GlobalEventHandler {
     fn handle(
         &mut self,
         event: anathema::component::Event,
         _elements: &mut anathema::widgets::Elements<'_, '_>,
-        ctx: &mut GlobalContext<'_>,
+        _ctx: &mut GlobalContext<'_>,
     ) -> Option<anathema::component::Event> {
         if let Some(exit) = self.check_for_exit(&event) {
             return Some(exit);
         }
-
-        match self.state {
-            GameState::MainMenu => self.handle_main_menu(event, ctx),
-            GameState::Paused => self.handle_pause(event, ctx),
-            GameState::Playing => self.handle_playing(event, ctx),
-            GameState::GameOver => self.handle_game_over(event, ctx),
-        }
+        let _ = self.tx.try_send(GameStateManagementMessage::Event(event));
+        None
     }
 }
 
-impl<'a> GameStateManagement<'a> {
-    fn new(
-        main_menu: &'a ComponentId<MainMenuComponentMessage>,
-        game: &'a ComponentId<GameComponentMessage>,
-        game_arena: &'a ComponentId<GameArenaComponentMessage>,
-    ) -> Self {
-        Self {
-            state: GameState::default(),
-            main_menu,
-            main_menu_choice: MainMenuChoice::Start,
-            game,
-            game_arena,
-        }
+impl GlobalEventHandler {
+    fn new(tx: Sender<GameStateManagementMessage>) -> Self {
+        Self { tx }
     }
 
     fn check_for_exit(
@@ -232,112 +201,5 @@ impl<'a> GameStateManagement<'a> {
             };
         }
         None
-    }
-
-    fn handle_main_menu(
-        &mut self,
-        event: anathema::component::Event,
-        ctx: &mut GlobalContext<'_>,
-    ) -> Option<anathema::component::Event> {
-        if let anathema::component::Event::Key(keyevent) = event {
-            match keyevent {
-                KeyEvent {
-                    code: KeyCode::Enter,
-                    ..
-                } => match self.main_menu_choice {
-                    MainMenuChoice::Start => {
-                        ctx.emit(*self.main_menu, MainMenuComponentMessage::Invisible);
-                        ctx.emit(*self.game, GameComponentMessage::Visible);
-                        self.state = GameState::Playing;
-                    }
-                    MainMenuChoice::Exit => std::process::exit(0),
-                },
-                KeyEvent {
-                    code: KeyCode::Char('w'),
-                    ..
-                } => {
-                    self.main_menu_choice = self.main_menu_choice.up();
-                    ctx.emit(
-                        *self.main_menu,
-                        MainMenuComponentMessage::ChangeTo(self.main_menu_choice.clone().into()),
-                    );
-                }
-                KeyEvent {
-                    code: KeyCode::Char('s'),
-                    ..
-                } => {
-                    self.main_menu_choice = self.main_menu_choice.down();
-                    ctx.emit(
-                        *self.main_menu,
-                        MainMenuComponentMessage::ChangeTo(self.main_menu_choice.clone().into()),
-                    );
-                }
-                _ => (),
-            }
-        }
-        None
-    }
-
-    fn handle_pause(
-        &mut self,
-        event: anathema::component::Event,
-        ctx: &mut GlobalContext,
-    ) -> Option<anathema::component::Event> {
-        if let anathema::component::Event::Key(keyevent) = event {
-            let KeyEvent {
-                code,
-                ctrl: _,
-                state: _,
-            } = keyevent;
-
-            if let KeyCode::Esc = code {
-                ctx.emit(*self.game, GameComponentMessage::Running);
-                self.state = GameState::Playing;
-            } else if let KeyCode::Enter = code {
-                ctx.emit(*self.main_menu, MainMenuComponentMessage::Visible);
-                ctx.emit(*self.game, GameComponentMessage::Invisible);
-                self.state = GameState::MainMenu;
-            }
-        }
-        None
-    }
-
-    fn handle_playing(
-        &mut self,
-        event: anathema::component::Event,
-        ctx: &mut GlobalContext,
-    ) -> Option<anathema::component::Event> {
-        if let anathema::component::Event::Key(keyevent) = event {
-            let KeyEvent {
-                code,
-                ctrl: _,
-                state: _,
-            } = keyevent;
-
-            match code {
-                KeyCode::Esc => {
-                    ctx.emit(*self.game, GameComponentMessage::Paused);
-                    self.state = GameState::Paused;
-                }
-                KeyCode::Char(' ') => ctx.emit(*self.game_arena, GameArenaComponentMessage::Rotate),
-                KeyCode::Char('a') => {
-                    ctx.emit(*self.game_arena, GameArenaComponentMessage::MoveLeft)
-                }
-                KeyCode::Char('d') => {
-                    ctx.emit(*self.game_arena, GameArenaComponentMessage::MoveRight)
-                }
-                KeyCode::Char('s') => ctx.emit(*self.game_arena, GameArenaComponentMessage::Drop),
-                _ => (),
-            }
-        }
-        None
-    }
-
-    fn handle_game_over(
-        &self,
-        _event: anathema::component::Event,
-        _ctx: &mut GlobalContext,
-    ) -> Option<anathema::component::Event> {
-        todo!()
     }
 }

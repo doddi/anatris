@@ -1,4 +1,5 @@
 vstack
   @MainMenu
   @Game
+  @GameOver
 

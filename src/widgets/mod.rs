@@ -1,5 +1,6 @@
 pub(crate) mod game;
 pub(crate) mod game_arena;
+pub(crate) mod game_over;
 pub(crate) mod game_type;
 pub(crate) mod line_count;
 pub(crate) mod main_menu;

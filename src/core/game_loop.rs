@@ -1,4 +1,7 @@
 use anathema::geometry::LocalPos;
+use smol::channel::Sender;
+
+use crate::GameStateManagementMessage;
 
 use super::tetronimo::{Tetronimo, TetronimoShape};
 
@@ -13,11 +16,13 @@ pub(crate) struct GameLoop {
 
     arena_size: Position,
 
-    game_state: GameState,
+    game_state: GameLoopState,
 
     current_score: u16,
     current_lines: u16,
     shapes_statistics: ShapeStatistics,
+
+    tx: Sender<GameStateManagementMessage>,
 }
 
 #[derive(Clone, Copy, Default)]
@@ -41,7 +46,7 @@ pub(crate) enum MoveActionType {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub(crate) enum GameState {
+pub(crate) enum GameLoopState {
     Paused,
     Start,
     Running,
@@ -59,7 +64,11 @@ pub(crate) enum GameAction {
 }
 
 impl GameLoop {
-    pub(crate) fn new(arena_width: usize, arena_height: usize) -> Self {
+    pub(crate) fn new(
+        arena_width: usize,
+        arena_height: usize,
+        tx: Sender<GameStateManagementMessage>,
+    ) -> Self {
         Self {
             arena: vec![None; arena_width * arena_height],
 
@@ -68,32 +77,34 @@ impl GameLoop {
             position: Position::new(0, 0),
             old_position: Position::new(0, 0),
             arena_size: Position::new(arena_width, arena_height),
-            game_state: GameState::Start,
+            game_state: GameLoopState::Start,
 
             current_score: 0,
             current_lines: 0,
             shapes_statistics: ShapeStatistics::default(),
+
+            tx,
         }
     }
 
     pub(crate) fn handle_input(&mut self, game_action: GameAction) {
         match game_action {
             GameAction::Pause => {
-                if self.game_state == GameState::Paused {
-                    self.game_state = GameState::Running;
+                if self.game_state == GameLoopState::Paused {
+                    self.game_state = GameLoopState::Running;
                 }
             }
             GameAction::Move(move_action) => {
-                if self.game_state == GameState::Running {
-                    self.game_state = GameState::Moving(move_action)
+                if self.game_state == GameLoopState::Running {
+                    self.game_state = GameLoopState::Moving(move_action)
                 }
             }
         }
     }
 
     pub(crate) fn fall_tick(&mut self) {
-        if self.game_state == GameState::Running {
-            self.game_state = GameState::Falling
+        if self.game_state == GameLoopState::Running {
+            self.game_state = GameLoopState::Falling
         }
     }
 
@@ -111,21 +122,23 @@ impl GameLoop {
     {
         self.old_position = self.position.clone();
         match self.game_state {
-            GameState::Paused => (),
-            GameState::Start => {
+            GameLoopState::Paused => (),
+            GameLoopState::Start => {
                 self.handle_start(update_score, update_line, update_next, update_statistics)
             }
-            GameState::Running => (),
-            GameState::Falling => self.handle_falling(),
-            GameState::Moving(game_move_type) => {
+            GameLoopState::Running => (),
+            GameLoopState::Falling => self.handle_falling(),
+            GameLoopState::Moving(game_move_type) => {
                 self.handle_movement_state(&game_move_type);
             }
-            GameState::PieceBlocked => self.handle_piece_blocked(),
-            GameState::CheckRows => {
+            GameLoopState::PieceBlocked => self.handle_piece_blocked(),
+            GameLoopState::CheckRows => {
                 self.handle_check_rows(update_score, update_line, update_statistics)
             }
-            GameState::CheckGameOver => self.handle_check_game_over(update_next, update_statistics),
-            GameState::GameOver => self.handle_game_over(),
+            GameLoopState::CheckGameOver => {
+                self.handle_check_game_over(update_next, update_statistics)
+            }
+            GameLoopState::GameOver => self.handle_game_over(),
         }
     }
 
@@ -147,7 +160,7 @@ impl GameLoop {
         self.current_lines = 0;
         update_score(self.current_score);
         update_lines(self.current_lines);
-        self.game_state = GameState::Running;
+        self.game_state = GameLoopState::Running;
     }
 
     fn handle_falling(&mut self) {
@@ -165,9 +178,9 @@ impl GameLoop {
             == 0
         {
             self.position.y += 1;
-            self.game_state = GameState::Running;
+            self.game_state = GameLoopState::Running;
         } else {
-            self.game_state = GameState::PieceBlocked;
+            self.game_state = GameLoopState::PieceBlocked;
         }
     }
 
@@ -179,7 +192,7 @@ impl GameLoop {
             MoveActionType::MoveLeft => self.handle_move_left(),
             MoveActionType::MoveRight => self.handle_move_right(),
         }
-        self.game_state = GameState::Running;
+        self.game_state = GameLoopState::Running;
     }
 
     fn handle_rotate(&mut self) {
@@ -224,7 +237,7 @@ impl GameLoop {
 
     fn handle_piece_blocked(&mut self) {
         self.add_piece_to_arena();
-        self.game_state = GameState::CheckRows;
+        self.game_state = GameLoopState::CheckRows;
     }
 
     fn handle_check_rows<S, L, T>(
@@ -246,7 +259,7 @@ impl GameLoop {
             self.current_lines += complete_row;
             update_line(self.current_lines);
         } else {
-            self.game_state = GameState::CheckGameOver;
+            self.game_state = GameLoopState::CheckGameOver;
         }
     }
 
@@ -286,14 +299,15 @@ impl GameLoop {
         });
 
         if overlap {
-            self.game_state = GameState::GameOver;
+            self.game_state = GameLoopState::GameOver;
         } else {
-            self.game_state = GameState::Running;
+            self.game_state = GameLoopState::Running;
         }
     }
 
     fn handle_game_over(&mut self) {
-        println!("Game over!");
+        self.game_state = GameLoopState::Start;
+        let _ = self.tx.try_send(GameStateManagementMessage::GameOver);
     }
 
     fn add_piece_to_arena(&mut self) {

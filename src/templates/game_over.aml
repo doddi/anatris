@@ -1,0 +1,8 @@
+if visible
+  hstack
+    spacer
+    vstack
+      spacer
+      text title
+      spacer
+    spacer
