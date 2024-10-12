@@ -142,6 +142,10 @@ fn main() {
         )
         .unwrap();
 
+    let _paused_id = runtime
+        .register_component("Paused", "src/templates/paused.aml", (), ())
+        .unwrap();
+
     let runtime = runtime.set_global_event_handler(GlobalEventHandler::new(tx.clone()));
 
     let emitter = runtime.emitter().clone();

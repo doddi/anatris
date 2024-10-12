@@ -1,0 +1,18 @@
+vstack
+  spacer
+  hstack
+    spacer
+    border [width: 50, background: "white", foreground: "red"]
+      vstack
+        padding
+          hstack
+            spacer
+            text "[Esc] Continue"
+            spacer
+        padding
+          hstack
+            spacer
+            text "[Enter] Quit to main menu"
+            spacer
+    spacer
+  spacer  
