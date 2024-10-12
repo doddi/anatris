@@ -38,6 +38,7 @@ impl GameArenaComponentState {
 impl From<GameArenaComponentMessage> for MoveActionType {
     fn from(value: GameArenaComponentMessage) -> Self {
         match value {
+            GameArenaComponentMessage::Initialise => todo!(),
             GameArenaComponentMessage::Rotate => MoveActionType::Rotate,
             GameArenaComponentMessage::Drop => MoveActionType::Drop,
             GameArenaComponentMessage::MoveLeft => MoveActionType::MoveLeft,
@@ -46,8 +47,9 @@ impl From<GameArenaComponentMessage> for MoveActionType {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub(crate) enum GameArenaComponentMessage {
+    Initialise,
     Rotate,
     Drop,
     MoveLeft,
@@ -202,7 +204,9 @@ impl Component for GameArenaComponent {
         mut _elements: Elements<'_, '_>,
         mut _context: Context<'_, Self::State>,
     ) {
-        if self.move_requested == MoveActionType::None {
+        if message == GameArenaComponentMessage::Initialise {
+            self.game_loop.initialise();
+        } else if self.move_requested == MoveActionType::None {
             self.move_requested = message.into();
         }
     }

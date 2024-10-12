@@ -419,6 +419,10 @@ impl GameLoop {
             }
         }
     }
+
+    pub(crate) fn initialise(&mut self) {
+        self.game_state = GameLoopState::Start;
+    }
 }
 
 #[derive(Debug, Clone)]

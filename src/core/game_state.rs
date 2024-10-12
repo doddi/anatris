@@ -137,6 +137,7 @@ pub(crate) fn start(
                 GameStateManagementMessage::Event(event) => match state {
                     GameState::MainMenu => handle_main_menu(
                         game_state_component_ids.game_id,
+                        game_state_component_ids.game_arena_id,
                         game_state_component_ids.game_over_id,
                         game_state_component_ids.main_menu_id,
                         &mut main_menu_choice,
@@ -206,6 +207,7 @@ fn handle_update_score(
 
 fn handle_main_menu(
     game_id: ComponentId<GameComponentMessage>,
+    game_arena_id: ComponentId<GameArenaComponentMessage>,
     game_over_id: ComponentId<GameOverComponentMessage>,
     main_menu_id: ComponentId<MainMenuComponentMessage>,
     main_menu_choice: &mut MainMenuChoice,
@@ -221,6 +223,7 @@ fn handle_main_menu(
             } => match main_menu_choice {
                 MainMenuChoice::Start => {
                     let _ = tx.emit(main_menu_id, MainMenuComponentMessage::Invisible);
+                    let _ = tx.emit(game_arena_id, GameArenaComponentMessage::Initialise);
                     let _ = tx.emit(game_id, GameComponentMessage::Visible);
                     let _ = tx.emit(game_id, GameComponentMessage::Running);
                     let _ = tx.emit(game_over_id, GameOverComponentMessage::Invisible);
@@ -262,9 +265,9 @@ fn handle_pause(event: anathema::component::Event, tx: &Sender<GameStateManageme
         } = keyevent;
 
         if let KeyCode::Esc = code {
-            tx.try_send(GameStateManagementMessage::Playing);
+            let _ = tx.try_send(GameStateManagementMessage::Playing);
         } else if let KeyCode::Enter = code {
-            tx.try_send(GameStateManagementMessage::MainMenu);
+            let _ = tx.try_send(GameStateManagementMessage::MainMenu);
         }
     }
 }
@@ -284,7 +287,7 @@ fn handle_playing(
 
         match code {
             KeyCode::Esc => {
-                tx.try_send(GameStateManagementMessage::Paused);
+                let _ = tx.try_send(GameStateManagementMessage::Paused);
             }
             KeyCode::Char(' ') => {
                 let _ = emitter.emit(game_arena, GameArenaComponentMessage::Rotate);
