@@ -2,17 +2,19 @@ vstack
   spacer
   hstack
     spacer
-    border [width: 50, background: "white", foreground: "red"]
+    border [width: 50, background: THEME.level_bg, foreground: THEME.level_fg]
       vstack
         padding
           hstack
             spacer
-            text "[Esc] Continue"
+            text [bold: true] "[Esc] " 
+            text "Continue"
             spacer
         padding
           hstack
             spacer
-            text "[Enter] Quit to main menu"
+            text [bold: true] "[Enter] "
+            text "Quit to main menu"
             spacer
     spacer
   spacer  

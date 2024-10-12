@@ -4,7 +4,7 @@ border
     vstack
       hstack [height: PIECE_HEIGHT]
         spacer
-        text "STATISTICS"
+        text [bold: true] "STATISTICS"
         spacer
       for shape in ["I", "J", "L", "O", "S", "T", "Z"]
         if shape == "I"

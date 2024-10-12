@@ -1,7 +1,7 @@
-let menu_highlight_fg = "white"
-let menu_highlight_bg = "red"
-let menu_fg = "red"
-let menu_bg = "white"
+let menu_highlight_fg = THEME.level_bg
+let menu_highlight_bg = THEME.level_fg
+let menu_fg = THEME.level_fg
+let menu_bg = THEME.level_bg
 
 if visible
   vstack
@@ -12,7 +12,7 @@ if visible
     spacer
     hstack
       spacer
-      border [width: 50, background: "grey", foreground: "red"]
+      border [width: 50, background: "grey", foreground: THEME.level_fg]
         vstack
           padding
             if start_highlighted

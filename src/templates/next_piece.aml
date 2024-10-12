@@ -1,10 +1,10 @@
-border
+border [width: 20]
   hstack
     spacer
     vstack [height: 5]
       hstack
         spacer
-        text "Next Piece"
+        text [bold: true] "Next Piece"
         spacer
       spacer
       // TODO: The pieces are too low

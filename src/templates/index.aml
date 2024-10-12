@@ -1,3 +1,8 @@
+let THEME = {
+  level_bg: "white",
+  level_fg: "red",
+}
+
 vstack
   @MainMenu
   @Game

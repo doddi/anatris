@@ -1,9 +1,5 @@
 let CANVAS_WIDTH=20
 let CANVAS_HEIGHT=20
-let THEME = {
-  level_bg: "cyan",
-  level_fg: "red",
-}
 
 if visible
   if paused

@@ -1,22 +1,18 @@
-border
+border [width: 20]
   vstack
-    padding [padding: 1]
-      vstack
-        hstack
-          spacer
-          text [foreground: "red"] "TOP"
-          spacer
-        hstack
-          spacer
-          text "11111111"
-          spacer
-    padding [padding: 1]
-      vstack
-        hstack
-          spacer
-          text [foreground: "yellow"] "SCORE"
-          spacer
-        hstack
-          spacer
-          text current_score
-          spacer
+    hstack
+      spacer
+      text [bold: true, foreground: "red"] "TOP"
+      spacer
+    hstack
+      spacer
+      text "0"
+      spacer
+    hstack
+      spacer
+      text [bold: true, foreground: "yellow"] "SCORE"
+      spacer
+    hstack
+      spacer
+      text current_score
+      spacer
