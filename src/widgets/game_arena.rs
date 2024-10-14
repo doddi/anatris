@@ -12,7 +12,7 @@ use smol::channel::Sender;
 
 use crate::core::{
     game_loop::{GameAction, GameLoop, MoveActionType},
-    game_state::GameStateManagementMessage,
+    global_state::GlobalStateManagementMessage,
     tetronimo::TetronimoShape,
 };
 
@@ -57,7 +57,7 @@ pub(crate) enum GameArenaComponentMessage {
 }
 
 pub(crate) struct GameArenaComponent {
-    tx: Sender<GameStateManagementMessage>,
+    tx: Sender<GlobalStateManagementMessage>,
     last_fall_update: Duration,
     last_move_update: Duration,
 
@@ -80,7 +80,7 @@ impl From<&TetronimoShape> for char {
 }
 
 impl GameArenaComponent {
-    pub(crate) fn new(tx: Sender<GameStateManagementMessage>, game_loop: GameLoop) -> Self {
+    pub(crate) fn new(tx: Sender<GlobalStateManagementMessage>, game_loop: GameLoop) -> Self {
         Self {
             tx,
             last_fall_update: Duration::ZERO,
@@ -148,22 +148,22 @@ impl GameArenaComponent {
             |score| {
                 let _ = self
                     .tx
-                    .try_send(GameStateManagementMessage::UpdateScore(score));
+                    .try_send(GlobalStateManagementMessage::UpdateScore(score));
             },
             |score| {
                 let _ = self
                     .tx
-                    .try_send(GameStateManagementMessage::UpdateLines(score));
+                    .try_send(GlobalStateManagementMessage::UpdateLines(score));
             },
             |shape| {
                 let _ = self
                     .tx
-                    .try_send(GameStateManagementMessage::UpdateNextTetronimo(shape));
+                    .try_send(GlobalStateManagementMessage::UpdateNextTetronimo(shape));
             },
             |statistics| {
                 let _ = self
                     .tx
-                    .try_send(GameStateManagementMessage::UpdateStatistics(
+                    .try_send(GlobalStateManagementMessage::UpdateStatistics(
                         statistics.into(),
                     ));
             },

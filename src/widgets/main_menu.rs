@@ -4,8 +4,41 @@ use anathema::{
     component::Component,
     state::{State, Value},
 };
+use smol::channel::Sender;
 
-pub(crate) struct MainMenuComponent;
+use crate::core::global_state::GlobalStateManagementMessage;
+
+pub(crate) struct MainMenuComponent {
+    tx: Sender<GlobalStateManagementMessage>,
+}
+
+impl MainMenuComponent {
+    pub(crate) fn new(tx: Sender<GlobalStateManagementMessage>) -> Self {
+        Self { tx }
+    }
+
+    fn handle_selection(&mut self, state: &mut MainMenuComponentState, selection: MainMenuAction) {
+        match selection {
+            MainMenuAction::Up => self.toggle_menu(state),
+            MainMenuAction::Down => self.toggle_menu(state),
+            MainMenuAction::Enter => match state.start_highlighted.to_bool() {
+                true => {
+                    let _ = self.tx.try_send(GlobalStateManagementMessage::Playing);
+                }
+                false => {
+                    let _ = self.tx.try_send(GlobalStateManagementMessage::Exit);
+                }
+            },
+        }
+    }
+
+    fn toggle_menu(&mut self, state: &mut MainMenuComponentState) {
+        match state.start_highlighted.to_bool() {
+            true => *state.start_highlighted.to_mut() = false,
+            false => *state.start_highlighted.to_mut() = true,
+        };
+    }
+}
 
 impl Component for MainMenuComponent {
     type State = MainMenuComponentState;
@@ -22,29 +55,23 @@ impl Component for MainMenuComponent {
         match message {
             MainMenuComponentMessage::Visible => *state.visible.to_mut() = true,
             MainMenuComponentMessage::Invisible => *state.visible.to_mut() = false,
-            MainMenuComponentMessage::ChangeTo(selection) => toggle_highlight(state, selection),
+            MainMenuComponentMessage::Change(selection) => self.handle_selection(state, selection),
         }
     }
 }
 
-fn toggle_highlight(state: &mut MainMenuComponentState, selection: MainMenuComponentSelection) {
-    match selection {
-        MainMenuComponentSelection::Start => *state.start_highlighted.to_mut() = true,
-        MainMenuComponentSelection::Exit => *state.start_highlighted.to_mut() = false,
-    }
-}
-
 #[derive(Debug)]
-pub(crate) enum MainMenuComponentSelection {
-    Start,
-    Exit,
+pub(crate) enum MainMenuAction {
+    Up,
+    Down,
+    Enter,
 }
 
 #[derive(Debug)]
 pub(crate) enum MainMenuComponentMessage {
     Visible,
     Invisible,
-    ChangeTo(MainMenuComponentSelection),
+    Change(MainMenuAction),
 }
 
 #[derive(State)]

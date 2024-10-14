@@ -1,3 +1,5 @@
+use std::process;
+
 use anathema::component::{ComponentId, Emitter, KeyCode, KeyEvent};
 use smol::channel::{Receiver, Sender};
 
@@ -6,7 +8,7 @@ use crate::widgets::{
     game_arena::GameArenaComponentMessage,
     game_over::GameOverComponentMessage,
     line_count::LineCountComponentMessage,
-    main_menu::{MainMenuComponentMessage, MainMenuComponentSelection},
+    main_menu::{MainMenuAction, MainMenuComponentMessage},
     next_piece::NextPieceComponentMessage,
     scoreboard::ScoreBoardComponentMessage,
     statistics::StatisticsComponentMessage,
@@ -52,17 +54,16 @@ impl GameStateComponentIds {
 
 pub(crate) fn start(
     emitter: anathema::component::Emitter,
-    tx: Sender<GameStateManagementMessage>,
-    rx: Receiver<GameStateManagementMessage>,
+    tx: Sender<GlobalStateManagementMessage>,
+    rx: Receiver<GlobalStateManagementMessage>,
     game_state_component_ids: GameStateComponentIds,
 ) {
     smol::spawn(async move {
-        let mut main_menu_choice = MainMenuChoice::Start;
         let mut state = GameState::MainMenu;
 
         while let Ok(message) = rx.recv().await {
             match message {
-                GameStateManagementMessage::MainMenu => {
+                GlobalStateManagementMessage::MainMenu => {
                     let _ = emitter.emit(
                         game_state_component_ids.main_menu_id,
                         MainMenuComponentMessage::Visible,
@@ -81,7 +82,7 @@ pub(crate) fn start(
                     );
                     state = message.into();
                 }
-                GameStateManagementMessage::Paused => {
+                GlobalStateManagementMessage::Paused => {
                     let _ = emitter.emit(
                         game_state_component_ids.main_menu_id,
                         MainMenuComponentMessage::Invisible,
@@ -100,7 +101,7 @@ pub(crate) fn start(
                     );
                     state = message.into();
                 }
-                GameStateManagementMessage::Playing => {
+                GlobalStateManagementMessage::Playing => {
                     let _ = emitter.emit(
                         game_state_component_ids.main_menu_id,
                         MainMenuComponentMessage::Invisible,
@@ -119,7 +120,7 @@ pub(crate) fn start(
                     );
                     state = message.into();
                 }
-                GameStateManagementMessage::GameOver => {
+                GlobalStateManagementMessage::GameOver => {
                     let _ = emitter.emit(
                         game_state_component_ids.main_menu_id,
                         MainMenuComponentMessage::Invisible,
@@ -134,38 +135,34 @@ pub(crate) fn start(
                     );
                     state = message.into();
                 }
-                GameStateManagementMessage::Event(event) => match state {
-                    GameState::MainMenu => handle_main_menu(
-                        game_state_component_ids.game_id,
-                        game_state_component_ids.game_arena_id,
-                        game_state_component_ids.game_over_id,
-                        game_state_component_ids.main_menu_id,
-                        &mut main_menu_choice,
-                        event,
-                        &mut state,
-                        &emitter,
-                    ),
+                GlobalStateManagementMessage::Event(event) => match state {
+                    GameState::MainMenu => {
+                        handle_main_menu(game_state_component_ids.main_menu_id, event, &emitter)
+                    }
                     GameState::Paused => handle_pause(event, &tx),
                     GameState::Playing => {
                         handle_playing(event, &tx, &emitter, game_state_component_ids.game_arena_id)
                     }
                     GameState::GameOver => handle_game_over(),
                 },
-                GameStateManagementMessage::UpdateScore(score) => {
+                GlobalStateManagementMessage::UpdateScore(score) => {
                     handle_update_score(&emitter, score, game_state_component_ids.score_board_id)
                 }
-                GameStateManagementMessage::UpdateLines(value) => {
+                GlobalStateManagementMessage::UpdateLines(value) => {
                     handle_update_lines(&emitter, value, game_state_component_ids.lines_count_id)
                 }
-                GameStateManagementMessage::UpdateNextTetronimo(tetronimo) => {
+                GlobalStateManagementMessage::UpdateNextTetronimo(tetronimo) => {
                     handle_update_next_tetronimo(
                         &emitter,
                         game_state_component_ids.next_piece_id,
                         tetronimo,
                     )
                 }
-                GameStateManagementMessage::UpdateStatistics(data) => {
+                GlobalStateManagementMessage::UpdateStatistics(data) => {
                     handle_update_statistics(&emitter, game_state_component_ids.statistics_id, data)
+                }
+                GlobalStateManagementMessage::Exit => {
+                    process::exit(0);
                 }
             }
         }
@@ -206,13 +203,8 @@ fn handle_update_score(
 }
 
 fn handle_main_menu(
-    game_id: ComponentId<GameComponentMessage>,
-    game_arena_id: ComponentId<GameArenaComponentMessage>,
-    game_over_id: ComponentId<GameOverComponentMessage>,
     main_menu_id: ComponentId<MainMenuComponentMessage>,
-    main_menu_choice: &mut MainMenuChoice,
     event: anathema::component::Event,
-    game_state: &mut GameState,
     tx: &Emitter,
 ) {
     if let anathema::component::Event::Key(keyevent) = event {
@@ -220,35 +212,28 @@ fn handle_main_menu(
             KeyEvent {
                 code: KeyCode::Enter,
                 ..
-            } => match main_menu_choice {
-                MainMenuChoice::Start => {
-                    let _ = tx.emit(main_menu_id, MainMenuComponentMessage::Invisible);
-                    let _ = tx.emit(game_arena_id, GameArenaComponentMessage::Initialise);
-                    let _ = tx.emit(game_id, GameComponentMessage::Visible);
-                    let _ = tx.emit(game_id, GameComponentMessage::Running);
-                    let _ = tx.emit(game_over_id, GameOverComponentMessage::Invisible);
-                    *game_state = GameState::Playing;
-                }
-                MainMenuChoice::Exit => std::process::exit(0),
-            },
+            } => {
+                let _ = tx.emit(
+                    main_menu_id,
+                    MainMenuComponentMessage::Change(MainMenuAction::Enter),
+                );
+            }
             KeyEvent {
                 code: KeyCode::Char('w'),
                 ..
             } => {
-                *main_menu_choice = main_menu_choice.up();
                 let _ = tx.emit(
                     main_menu_id,
-                    MainMenuComponentMessage::ChangeTo(main_menu_choice.clone().into()),
+                    MainMenuComponentMessage::Change(MainMenuAction::Up),
                 );
             }
             KeyEvent {
                 code: KeyCode::Char('s'),
                 ..
             } => {
-                *main_menu_choice = main_menu_choice.down();
                 let _ = tx.emit(
                     main_menu_id,
-                    MainMenuComponentMessage::ChangeTo(main_menu_choice.clone().into()),
+                    MainMenuComponentMessage::Change(MainMenuAction::Down),
                 );
             }
             _ => (),
@@ -256,7 +241,7 @@ fn handle_main_menu(
     }
 }
 
-fn handle_pause(event: anathema::component::Event, tx: &Sender<GameStateManagementMessage>) {
+fn handle_pause(event: anathema::component::Event, tx: &Sender<GlobalStateManagementMessage>) {
     if let anathema::component::Event::Key(keyevent) = event {
         let KeyEvent {
             code,
@@ -265,16 +250,16 @@ fn handle_pause(event: anathema::component::Event, tx: &Sender<GameStateManageme
         } = keyevent;
 
         if let KeyCode::Esc = code {
-            let _ = tx.try_send(GameStateManagementMessage::Playing);
+            let _ = tx.try_send(GlobalStateManagementMessage::Playing);
         } else if let KeyCode::Enter = code {
-            let _ = tx.try_send(GameStateManagementMessage::MainMenu);
+            let _ = tx.try_send(GlobalStateManagementMessage::MainMenu);
         }
     }
 }
 
 fn handle_playing(
     event: anathema::component::Event,
-    tx: &Sender<GameStateManagementMessage>,
+    tx: &Sender<GlobalStateManagementMessage>,
     emitter: &Emitter,
     game_arena: ComponentId<GameArenaComponentMessage>,
 ) {
@@ -287,7 +272,7 @@ fn handle_playing(
 
         match code {
             KeyCode::Esc => {
-                let _ = tx.try_send(GameStateManagementMessage::Paused);
+                let _ = tx.try_send(GlobalStateManagementMessage::Paused);
             }
             KeyCode::Char(' ') => {
                 let _ = emitter.emit(game_arena, GameArenaComponentMessage::Rotate);
@@ -308,40 +293,8 @@ fn handle_playing(
 
 fn handle_game_over() {}
 
-#[derive(Clone)]
-enum MainMenuChoice {
-    Start,
-    Exit,
-}
-
-impl MainMenuChoice {
-    fn up(&mut self) -> Self {
-        match self {
-            MainMenuChoice::Start => MainMenuChoice::Exit,
-            MainMenuChoice::Exit => MainMenuChoice::Start,
-        }
-    }
-
-    fn down(&mut self) -> Self {
-        match self {
-            MainMenuChoice::Start => MainMenuChoice::Exit,
-            MainMenuChoice::Exit => MainMenuChoice::Start,
-        }
-    }
-}
-
-impl From<MainMenuChoice> for MainMenuComponentSelection {
-    fn from(value: MainMenuChoice) -> Self {
-        match value {
-            MainMenuChoice::Start => MainMenuComponentSelection::Start,
-            MainMenuChoice::Exit => MainMenuComponentSelection::Exit,
-        }
-    }
-}
-
-#[derive(Default, Debug)]
-pub(crate) enum GameStateManagementMessage {
-    #[default]
+#[derive(Debug)]
+pub(crate) enum GlobalStateManagementMessage {
     MainMenu,
     Paused,
     Playing,
@@ -351,24 +304,24 @@ pub(crate) enum GameStateManagementMessage {
     UpdateLines(u16),
     UpdateNextTetronimo(TetronimoShape),
     UpdateStatistics(StatisticsComponentMessage),
+    Exit,
 }
 
-#[derive(Default, Debug)]
+#[derive(Debug)]
 enum GameState {
-    #[default]
     MainMenu,
     Paused,
     Playing,
     GameOver,
 }
 
-impl From<GameStateManagementMessage> for GameState {
-    fn from(value: GameStateManagementMessage) -> Self {
+impl From<GlobalStateManagementMessage> for GameState {
+    fn from(value: GlobalStateManagementMessage) -> Self {
         match value {
-            GameStateManagementMessage::MainMenu => GameState::MainMenu,
-            GameStateManagementMessage::Paused => GameState::Paused,
-            GameStateManagementMessage::Playing => GameState::Playing,
-            GameStateManagementMessage::GameOver => GameState::GameOver,
+            GlobalStateManagementMessage::MainMenu => GameState::MainMenu,
+            GlobalStateManagementMessage::Paused => GameState::Paused,
+            GlobalStateManagementMessage::Playing => GameState::Playing,
+            GlobalStateManagementMessage::GameOver => GameState::GameOver,
             _ => {
                 panic!("Key handling state is not a valid state to transition to")
             }

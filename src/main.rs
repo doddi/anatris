@@ -8,7 +8,7 @@ use anathema::{
 };
 use core::{
     game_loop::GameLoop,
-    game_state::{self, GameStateComponentIds, GameStateManagementMessage},
+    global_state::{self, GameStateComponentIds, GlobalStateManagementMessage},
 };
 use smol::channel::Sender;
 use std::fs::read_to_string;
@@ -31,7 +31,7 @@ fn main() {
 
     let doc = Document::new(template);
 
-    let (tx, rx) = smol::channel::unbounded::<GameStateManagementMessage>();
+    let (tx, rx) = smol::channel::unbounded::<GlobalStateManagementMessage>();
     let game_loop = GameLoop::new(10, 20, tx.clone());
 
     let backend = TuiBackend::builder()
@@ -47,7 +47,7 @@ fn main() {
         .register_component(
             "MainMenu",
             "src/templates/main_menu.aml",
-            MainMenuComponent {},
+            MainMenuComponent::new(tx.clone()),
             MainMenuComponentState::new(),
         )
         .unwrap();
@@ -160,14 +160,15 @@ fn main() {
         statistics_id,
     );
 
-    game_state::start(emitter, tx, rx, component_ids);
+    global_state::start(emitter, tx, rx, component_ids);
     runtime.finish().unwrap().run();
 }
 
 struct GlobalEventHandler {
-    tx: Sender<GameStateManagementMessage>,
+    tx: Sender<GlobalStateManagementMessage>,
 }
 
+// All key events are simply passed on to the global global handler
 impl GlobalEvents for GlobalEventHandler {
     fn handle(
         &mut self,
@@ -178,13 +179,13 @@ impl GlobalEvents for GlobalEventHandler {
         if let Some(exit) = self.check_for_exit(&event) {
             return Some(exit);
         }
-        let _ = self.tx.try_send(GameStateManagementMessage::Event(event));
+        let _ = self.tx.try_send(GlobalStateManagementMessage::Event(event));
         None
     }
 }
 
 impl GlobalEventHandler {
-    fn new(tx: Sender<GameStateManagementMessage>) -> Self {
+    fn new(tx: Sender<GlobalStateManagementMessage>) -> Self {
         Self { tx }
     }
 

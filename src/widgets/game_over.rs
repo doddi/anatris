@@ -6,15 +6,15 @@ use anathema::{
 };
 use smol::channel::Sender;
 
-use crate::GameStateManagementMessage;
+use crate::core::global_state::GlobalStateManagementMessage;
 
 pub(crate) struct GameOverComponent {
     duration: Duration,
-    tx: Sender<GameStateManagementMessage>,
+    tx: Sender<GlobalStateManagementMessage>,
 }
 
 impl GameOverComponent {
-    pub(crate) fn new(tx: Sender<GameStateManagementMessage>) -> Self {
+    pub(crate) fn new(tx: Sender<GlobalStateManagementMessage>) -> Self {
         Self {
             duration: Duration::ZERO,
             tx,
@@ -53,7 +53,7 @@ impl Component for GameOverComponent {
         if state.visible.to_bool() {
             self.duration += dt;
             if self.duration > Duration::new(5, 0) {
-                let _ = self.tx.try_send(GameStateManagementMessage::MainMenu);
+                let _ = self.tx.try_send(GlobalStateManagementMessage::MainMenu);
             }
         }
     }

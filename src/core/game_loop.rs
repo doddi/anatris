@@ -1,7 +1,7 @@
 use anathema::geometry::LocalPos;
 use smol::channel::Sender;
 
-use crate::GameStateManagementMessage;
+use crate::GlobalStateManagementMessage;
 
 use super::tetronimo::{Tetronimo, TetronimoShape};
 
@@ -22,7 +22,7 @@ pub(crate) struct GameLoop {
     current_lines: u16,
     shapes_statistics: ShapeStatistics,
 
-    tx: Sender<GameStateManagementMessage>,
+    tx: Sender<GlobalStateManagementMessage>,
 }
 
 #[derive(Clone, Copy, Default)]
@@ -67,7 +67,7 @@ impl GameLoop {
     pub(crate) fn new(
         arena_width: usize,
         arena_height: usize,
-        tx: Sender<GameStateManagementMessage>,
+        tx: Sender<GlobalStateManagementMessage>,
     ) -> Self {
         Self {
             arena: vec![None; arena_width * arena_height],
@@ -307,7 +307,7 @@ impl GameLoop {
 
     fn handle_game_over(&mut self) {
         self.game_state = GameLoopState::Start;
-        let _ = self.tx.try_send(GameStateManagementMessage::GameOver);
+        let _ = self.tx.try_send(GlobalStateManagementMessage::GameOver);
     }
 
     fn add_piece_to_arena(&mut self) {
