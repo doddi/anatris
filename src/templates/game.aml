@@ -14,13 +14,15 @@ if visible
         spacer
         vstack [width: CANVAS_WIDTH]
           @GameType
-          @Statistics
+          @Statistics [height: 100]
         vstack
           @LineCount
           @GameArena [paused: paused]
         vstack [width: CANVAS_WIDTH]
           @ScoreBoard
           @NextPiece
+          border
         spacer
+      spacer
 
 

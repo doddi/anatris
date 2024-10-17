@@ -1,4 +1,4 @@
-border
+border [height: CANVAS_HEIGHT + 2]
   hstack
     spacer
     vstack

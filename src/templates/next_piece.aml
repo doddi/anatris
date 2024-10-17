@@ -1,4 +1,4 @@
-border [width: 20]
+border [height: CANVAS_HEIGHT - 1, width: 20]
   hstack
     spacer
     vstack [height: 5]
@@ -6,7 +6,6 @@ border [width: 20]
         spacer
         text [bold: true] "Next Piece"
         spacer
-      spacer
-      // TODO: The pieces are too low
       @StaticPiece [shape: shape]
+      spacer
     spacer
