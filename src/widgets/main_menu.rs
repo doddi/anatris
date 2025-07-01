@@ -4,6 +4,7 @@ use anathema::{
     component::Component,
     state::{State, Value},
 };
+use anathema::component::{Children, Context};
 use smol::channel::Sender;
 
 use crate::core::global_state::GlobalStateManagementMessage;
@@ -21,7 +22,7 @@ impl MainMenuComponent {
         match selection {
             MainMenuAction::Up => self.toggle_menu(state),
             MainMenuAction::Down => self.toggle_menu(state),
-            MainMenuAction::Enter => match state.start_highlighted.to_bool() {
+            MainMenuAction::Enter => match state.start_highlighted.copy_value() {
                 true => {
                     let _ = self.tx.try_send(GlobalStateManagementMessage::Playing);
                 }
@@ -33,7 +34,7 @@ impl MainMenuComponent {
     }
 
     fn toggle_menu(&mut self, state: &mut MainMenuComponentState) {
-        match state.start_highlighted.to_bool() {
+        match state.start_highlighted.copy_value() {
             true => *state.start_highlighted.to_mut() = false,
             false => *state.start_highlighted.to_mut() = true,
         };
@@ -45,19 +46,19 @@ impl Component for MainMenuComponent {
 
     type Message = MainMenuComponentMessage;
 
-    fn message(
+    fn on_message(
         &mut self,
         message: Self::Message,
         state: &mut Self::State,
-        mut _elements: anathema::widgets::Elements<'_, '_>,
-        mut _context: anathema::prelude::Context<'_, Self::State>,
-    ) {
+        _children: Children<'_, '_>,
+        _context: Context<'_, '_, Self::State>) {
         match message {
             MainMenuComponentMessage::Visible => *state.visible.to_mut() = true,
             MainMenuComponentMessage::Invisible => *state.visible.to_mut() = false,
             MainMenuComponentMessage::Change(selection) => self.handle_selection(state, selection),
         }
     }
+
 }
 
 #[derive(Debug)]

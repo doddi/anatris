@@ -6,5 +6,5 @@ let THEME = {
 vstack
   @MainMenu
   @Game
-  @GameOver
+//  @GameOver
 

@@ -1,3 +1,3 @@
 hstack
-  text count
-  @StaticPiece [shape: shape]
+  text state.count
+  @StaticPiece [shape: state.shape]

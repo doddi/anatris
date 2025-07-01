@@ -1,8 +1,8 @@
-if visible
+if state.visible
   hstack
     spacer
     vstack
       spacer
-      text title
+      text state.title
       spacer
     spacer

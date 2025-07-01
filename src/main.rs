@@ -10,8 +10,7 @@ use core::{
     game_loop::GameLoop,
     global_state::{self, GameStateComponentIds, GlobalStateManagementMessage},
 };
-use smol::channel::Sender;
-use std::fs::read_to_string;
+use anathema::component::Event;
 use widgets::{
     game::{GameComponent, GameComponentState},
     game_arena::{GameArenaComponent, GameArenaComponentState},
@@ -27,24 +26,32 @@ use widgets::{
 };
 
 fn main() {
-    let template = read_to_string("src/templates/index.aml").unwrap();
+    // let template = read_to_string("src/templates/index.aml").unwrap();
 
-    let doc = Document::new(template);
 
     let (tx, rx) = smol::channel::unbounded::<GlobalStateManagementMessage>();
     let game_loop = GameLoop::new(10, 20, tx.clone());
 
-    let backend = TuiBackend::builder()
+    let mut backend = TuiBackend::builder()
         .enable_alt_screen()
         .enable_raw_mode()
         .hide_cursor()
         .finish()
         .unwrap();
 
-    let mut runtime = Runtime::builder(doc, backend);
+    let doc = Document::new("@index");
+    let mut builder = Runtime::builder(doc, &backend)
+        .with_global_event_handler(|event, _tabindex, _components| {
+            if let Some(exit) = check_for_exit(&event) {
+                return Some(exit);
+            }
+            let _ = tx.try_send(GlobalStateManagementMessage::Event(event));
+            None
+    });
+    builder.default::<()>("index", "src/templates/index.aml").unwrap();
 
-    let main_menu_id = runtime
-        .register_component(
+    let main_menu_id = builder
+        .component(
             "MainMenu",
             "src/templates/main_menu.aml",
             MainMenuComponent::new(tx.clone()),
@@ -52,8 +59,8 @@ fn main() {
         )
         .unwrap();
 
-    let game_id = runtime
-        .register_component(
+    let game_id = builder
+        .component(
             "Game",
             "src/templates/game.aml",
             GameComponent {},
@@ -61,8 +68,8 @@ fn main() {
         )
         .unwrap();
 
-    let score_board_id = runtime
-        .register_component(
+    let score_board_id = builder
+        .component(
             "ScoreBoard",
             "src/templates/scoreboard.aml",
             ScoreBoardComponent {},
@@ -70,8 +77,8 @@ fn main() {
         )
         .unwrap();
 
-    let next_piece_id = runtime
-        .register_component(
+    let next_piece_id = builder
+        .component(
             "NextPiece",
             "src/templates/next_piece.aml",
             NextPieceComponent {},
@@ -79,8 +86,8 @@ fn main() {
         )
         .unwrap();
 
-    let statistics_id = runtime
-        .register_component(
+    let statistics_id = builder
+        .component(
             "Statistics",
             "src/templates/statistics.aml",
             StatisticsComponent {},
@@ -88,8 +95,8 @@ fn main() {
         )
         .unwrap();
 
-    runtime
-        .register_prototype(
+    builder
+        .prototype(
             "Statistic",
             "src/templates/statistic.aml",
             || StatisticComponent {},
@@ -97,8 +104,8 @@ fn main() {
         )
         .unwrap();
 
-    let lines_count_id = runtime
-        .register_component(
+    let lines_count_id = builder
+        .component(
             "LineCount",
             "src/templates/line_count.aml",
             LineCountComponent {},
@@ -106,8 +113,8 @@ fn main() {
         )
         .unwrap();
 
-    runtime
-        .register_component(
+    builder
+        .component(
             "GameType",
             "src/templates/game_type.aml",
             GameTypeComponent {},
@@ -115,8 +122,8 @@ fn main() {
         )
         .unwrap();
 
-    let game_arena_id = runtime
-        .register_component(
+    let game_arena_id = builder
+        .component(
             "GameArena",
             "src/templates/game_arena.aml",
             GameArenaComponent::new(tx.clone(), game_loop),
@@ -124,8 +131,8 @@ fn main() {
         )
         .unwrap();
 
-    runtime
-        .register_prototype(
+    builder
+        .prototype(
             "StaticPiece",
             "src/templates/static_piece.aml",
             || StaticPieceComponent {},
@@ -133,8 +140,8 @@ fn main() {
         )
         .unwrap();
 
-    let game_over_id = runtime
-        .register_component(
+    let game_over_id = builder
+        .component(
             "GameOver",
             "src/templates/game_over.aml",
             GameOverComponent::new(tx.clone()),
@@ -142,13 +149,11 @@ fn main() {
         )
         .unwrap();
 
-    let _paused_id = runtime
-        .register_component("Paused", "src/templates/paused.aml", (), ())
+    let _paused_id = builder
+        .component("Paused", "src/templates/paused.aml", (), ())
         .unwrap();
 
-    let runtime = runtime.set_global_event_handler(GlobalEventHandler::new(tx.clone()));
-
-    let emitter = runtime.emitter().clone();
+    let emitter = builder.emitter().clone();
     let component_ids = GameStateComponentIds::new(
         main_menu_id,
         game_id,
@@ -160,49 +165,24 @@ fn main() {
         statistics_id,
     );
 
-    global_state::start(emitter, tx, rx, component_ids);
-    runtime.finish().unwrap().run();
+    global_state::start(emitter, tx.clone(), rx, component_ids);
+    builder
+        .finish(&mut backend, |runtime, backend| runtime.run(backend))
+        .unwrap();
 }
 
-struct GlobalEventHandler {
-    tx: Sender<GlobalStateManagementMessage>,
-}
-
-// All key events are simply passed on to the global global handler
-impl GlobalEvents for GlobalEventHandler {
-    fn handle(
-        &mut self,
-        event: anathema::component::Event,
-        _elements: &mut anathema::widgets::Elements<'_, '_>,
-        _ctx: &mut GlobalContext<'_>,
-    ) -> Option<anathema::component::Event> {
-        if let Some(exit) = self.check_for_exit(&event) {
-            return Some(exit);
-        }
-        let _ = self.tx.try_send(GlobalStateManagementMessage::Event(event));
-        None
+fn check_for_exit(
+    event: &Event,
+) -> Option<Event> {
+    if let Event::Key(key_event) = event {
+        return match key_event {
+            KeyEvent {
+                code: KeyCode::Char('c'),
+                ctrl: true,
+                state: KeyState::Press,
+            } => Some(Event::Stop),
+            _ => None,
+        };
     }
-}
-
-impl GlobalEventHandler {
-    fn new(tx: Sender<GlobalStateManagementMessage>) -> Self {
-        Self { tx }
-    }
-
-    fn check_for_exit(
-        &self,
-        event: &anathema::component::Event,
-    ) -> Option<anathema::component::Event> {
-        if let anathema::component::Event::Key(key_event) = event {
-            return match key_event {
-                KeyEvent {
-                    code: KeyCode::Char('c'),
-                    ctrl: true,
-                    state: KeyState::Press,
-                } => Some(anathema::component::Event::Stop),
-                _ => None,
-            };
-        }
-        None
-    }
+    None
 }

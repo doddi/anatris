@@ -4,6 +4,7 @@ use anathema::{
     component::Component,
     state::{State, Value},
 };
+use anathema::component::{Children, Context};
 use smol::channel::Sender;
 
 use crate::core::global_state::GlobalStateManagementMessage;
@@ -27,34 +28,32 @@ impl Component for GameOverComponent {
 
     type Message = GameOverComponentMessage;
 
-    fn message(
+    fn on_tick(
+        &mut self,
+        state: &mut Self::State,
+        _children: Children<'_, '_>,
+        _context: Context<'_, '_, Self::State>,
+        dt: Duration) {
+        if state.visible.copy_value() {
+            self.duration += dt;
+            if self.duration > Duration::new(5, 0) {
+                let _ = self.tx.try_send(GlobalStateManagementMessage::MainMenu);
+            }
+        }
+    }
+
+    fn on_message(
         &mut self,
         message: Self::Message,
         state: &mut Self::State,
-        mut _elements: anathema::widgets::Elements<'_, '_>,
-        mut _context: anathema::prelude::Context<'_, Self::State>,
-    ) {
+        _children: Children<'_, '_>,
+        _context: Context<'_, '_, Self::State>) {
         match message {
             GameOverComponentMessage::Visible => {
                 self.duration = Duration::ZERO;
                 *state.visible.to_mut() = true
             }
             GameOverComponentMessage::Invisible => *state.visible.to_mut() = false,
-        }
-    }
-
-    fn tick(
-        &mut self,
-        state: &mut Self::State,
-        mut _elements: anathema::widgets::Elements<'_, '_>,
-        _context: anathema::prelude::Context<'_, Self::State>,
-        dt: std::time::Duration,
-    ) {
-        if state.visible.to_bool() {
-            self.duration += dt;
-            if self.duration > Duration::new(5, 0) {
-                let _ = self.tx.try_send(GlobalStateManagementMessage::MainMenu);
-            }
         }
     }
 }

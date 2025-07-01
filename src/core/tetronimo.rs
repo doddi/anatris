@@ -1,4 +1,5 @@
-use rand::distributions::{Distribution, Standard};
+use rand::distr::StandardUniform;
+use rand::prelude::Distribution;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum TetronimoShape {
@@ -11,9 +12,9 @@ pub(crate) enum TetronimoShape {
     ZShape,
 }
 
-impl Distribution<TetronimoShape> for Standard {
+impl Distribution<TetronimoShape> for StandardUniform {
     fn sample<R: rand::prelude::Rng + ?Sized>(&self, rng: &mut R) -> TetronimoShape {
-        match rng.gen_range(0..=5) {
+        match rng.random_range(0..=5) {
             0 => TetronimoShape::IShape,
             1 => TetronimoShape::JShape,
             2 => TetronimoShape::LShape,

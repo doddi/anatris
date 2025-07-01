@@ -6,6 +6,6 @@ border [height: CANVAS_HEIGHT - 1, width: 20]
         spacer
         text [bold: true] "Next Piece"
         spacer
-      @StaticPiece [shape: shape]
+      @StaticPiece [shape: state.shape]
       spacer
     spacer

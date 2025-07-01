@@ -3,7 +3,7 @@ let menu_highlight_bg = THEME.level_fg
 let menu_fg = THEME.level_fg
 let menu_bg = THEME.level_bg
 
-if visible
+if state.visible
   vstack
     hstack
       spacer
@@ -15,7 +15,7 @@ if visible
       border [width: 50, background: "grey", foreground: THEME.level_fg]
         vstack
           padding
-            if start_highlighted
+            if state.start_highlighted
               hstack [foreground: menu_highlight_fg, background: menu_highlight_bg]
                 spacer
                 text "Start"
@@ -26,7 +26,7 @@ if visible
                 text "Start"
                 spacer
           padding
-            if !start_highlighted
+            if !state.start_highlighted
               hstack [foreground: menu_highlight_fg, background: menu_highlight_bg]
                 spacer
                 text "Exit"
