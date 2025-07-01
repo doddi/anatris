@@ -7,18 +7,18 @@ border [height: CANVAS_HEIGHT + 2]
         text [bold: true] "STATISTICS"
         spacer
       for shape in ["I", "J", "L", "O", "S", "T", "Z"]
-        if state.shape == "I"
-          @Statistic [shape: state.shape, count: state.i_shape]
+        if shape == "I"
+          @Statistic [shape: shape, count: state.i_shape]
         else if shape == "J"
-          @Statistic [shape: state.shape, count: state.j_shape]
+          @Statistic [shape: shape, count: state.j_shape]
         else if shape == "L"
-          @Statistic [shape: state.shape, count: state.l_shape]
+          @Statistic [shape: shape, count: state.l_shape]
         else if shape == "O"
-          @Statistic [shape: state.shape, count: state.o_shape]
+          @Statistic [shape: shape, count: state.o_shape]
         else if shape == "S"
-          @Statistic [shape: state.shape, count: state.s_shape]
+          @Statistic [shape: shape, count: state.s_shape]
         else if shape == "T"
-          @Statistic [shape: state.shape, count: state.t_shape]
+          @Statistic [shape: shape, count: state.t_shape]
         else if shape == "Z"
-          @Statistic [shape: state.shape, count: state.z_shape]
+          @Statistic [shape: shape, count: state.z_shape]
     spacer
