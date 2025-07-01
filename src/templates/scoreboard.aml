@@ -14,5 +14,5 @@ border [width: 20]
       spacer
     hstack
       spacer
-      text current_score
+      text state.current_score
       spacer

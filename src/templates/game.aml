@@ -1,14 +1,14 @@
 let CANVAS_WIDTH=20
 let CANVAS_HEIGHT=20
 
-if visible
-  if paused
+if state.visible
+  if state.paused
     @Paused
   else
     vstack
       hstack
         spacer
-        text title
+        text state.title
         spacer
       hstack
         spacer

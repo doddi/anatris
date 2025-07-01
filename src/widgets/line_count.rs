@@ -11,12 +11,12 @@ impl Component for LineCountComponent {
     type State = LineCountState;
     type Message = LineCountComponentMessage;
 
-    fn message(
+    fn on_message(
         &mut self,
         message: Self::Message,
         state: &mut Self::State,
-        mut _elements: anathema::widgets::Elements<'_, '_>,
-        mut _context: anathema::prelude::Context<'_, Self::State>,
+        _children: anathema::component::Children<'_, '_>,
+        _context: anathema::component::Context<'_, '_, Self::State>,
     ) {
         match message {
             LineCountComponentMessage::Count(value) => *state.count.to_mut() = value,

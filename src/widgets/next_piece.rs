@@ -12,12 +12,12 @@ impl Component for NextPieceComponent {
     type State = NextPieceState;
     type Message = NextPieceComponentMessage;
 
-    fn message(
+    fn on_message(
         &mut self,
         message: Self::Message,
         state: &mut Self::State,
-        mut _elements: anathema::widgets::Elements<'_, '_>,
-        mut _context: anathema::prelude::Context<'_, Self::State>,
+        _children: anathema::component::Children<'_, '_>,
+        _context: anathema::component::Context<'_, '_, Self::State>,
     ) {
         *state.shape.to_mut() = message.shape.into();
     }

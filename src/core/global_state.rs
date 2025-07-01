@@ -53,7 +53,7 @@ impl GameStateComponentIds {
 }
 
 pub(crate) fn start(
-    emitter: anathema::component::Emitter,
+    emitter: Emitter,
     tx: Sender<GlobalStateManagementMessage>,
     rx: Receiver<GlobalStateManagementMessage>,
     game_state_component_ids: GameStateComponentIds,
@@ -242,12 +242,12 @@ fn handle_main_menu(
 }
 
 fn handle_pause(event: anathema::component::Event, tx: &Sender<GlobalStateManagementMessage>) {
-    if let anathema::component::Event::Key(keyevent) = event {
+    if let anathema::component::Event::Key(key_event) = event {
         let KeyEvent {
             code,
             ctrl: _,
             state: _,
-        } = keyevent;
+        } = key_event;
 
         if let KeyCode::Esc = code {
             let _ = tx.try_send(GlobalStateManagementMessage::Playing);

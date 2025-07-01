@@ -5,9 +5,9 @@ use anathema::{
     component::{Component, Context},
     default_widgets::Canvas,
     geometry::LocalPos,
-    state::{AnyState, List, State, Value},
-    widgets::Elements,
+    state::{List, State, Value},
 };
+use anathema::component::Children;
 use smol::channel::Sender;
 
 use crate::core::{
@@ -30,7 +30,7 @@ impl GameArenaComponentState {
     pub(crate) fn new() -> Self {
         Self {
             paused: Value::new(false),
-            debug: List::empty(),
+            debug: List::empty().into(),
         }
     }
 }
@@ -115,8 +115,7 @@ impl GameArenaComponent {
     fn handle_moving_state(
         &mut self,
         _state: &mut GameArenaComponentState,
-        mut elements: Elements,
-        _context: &Context<'_, GameArenaComponentState>,
+        mut children: Children<'_, '_>,
         dt: Duration,
     ) {
         self.last_fall_update += dt;
@@ -169,7 +168,7 @@ impl GameArenaComponent {
             },
         );
 
-        elements.by_tag("canvas").first(|el, _| {
+        children.elements().by_tag("canvas").first(|el, _| {
             let canvas = el.to::<Canvas>();
 
             self.draw_arena(canvas);
@@ -182,48 +181,32 @@ impl Component for GameArenaComponent {
     type State = GameArenaComponentState;
     type Message = GameArenaComponentMessage;
 
-    fn tick(
+    fn on_tick(
         &mut self,
         state: &mut Self::State,
-        elements: Elements<'_, '_>,
-        context: Context<'_, Self::State>,
+        children: Children<'_, '_>,
+        context: Context<'_, '_, Self::State>,
         dt: Duration,
     ) {
-        let is_paused = extract_bool_attribute(&context, "paused");
+        let is_paused = context.attributes.get_as::<bool>("paused");
 
         match is_paused {
             Some(true) => self.game_loop.handle_input(GameAction::Pause),
-            _ => self.handle_moving_state(state, elements, &context, dt),
+            _ => self.handle_moving_state(state, children, dt),
         }
     }
 
-    fn message(
+    fn on_message(
         &mut self,
         message: Self::Message,
         _state: &mut Self::State,
-        mut _elements: Elements<'_, '_>,
-        mut _context: Context<'_, Self::State>,
+        _children: Children<'_, '_>,
+        _context: Context<'_, '_, Self::State>,
     ) {
         if message == GameArenaComponentMessage::Initialise {
             self.game_loop.initialise();
         } else if self.move_requested == MoveActionType::None {
             self.move_requested = message.into();
         }
-    }
-}
-
-fn extract_bool_attribute(
-    context: &Context<GameArenaComponentState>,
-    attribute: &str,
-) -> Option<bool> {
-    let either = context.get_external(attribute);
-    match either {
-        Some(either) => match either {
-            anathema::widgets::expressions::Either::Static(value) => Some(value.to_bool()),
-            anathema::widgets::expressions::Either::Dyn(value) => {
-                value.to_common().map(|value| value.to_bool())
-            }
-        },
-        _ => None,
     }
 }

@@ -4,6 +4,7 @@ use anathema::{
     component::Component,
     state::{State, Value},
 };
+use anathema::component::{Children, Context};
 
 pub(crate) struct GameComponent;
 
@@ -13,13 +14,7 @@ impl Component for GameComponent {
     type State = GameComponentState;
     type Message = GameComponentMessage;
 
-    fn message(
-        &mut self,
-        message: Self::Message,
-        state: &mut Self::State,
-        mut _elements: anathema::widgets::Elements<'_, '_>,
-        mut _context: anathema::prelude::Context<'_, Self::State>,
-    ) {
+    fn on_message(&mut self, message: Self::Message, state: &mut Self::State, _children: Children<'_, '_>, _context: Context<'_, '_, Self::State>) {
         match message {
             GameComponentMessage::Visible => {
                 *state.visible.to_mut() = true;
@@ -38,6 +33,7 @@ impl Component for GameComponent {
         // template that the widget code can then use.
         // Pushing
     }
+
 }
 
 #[derive(State)]
