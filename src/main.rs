@@ -26,18 +26,17 @@ use widgets::{
 };
 
 fn main() {
-    // let template = read_to_string("src/templates/index.aml").unwrap();
-
-
     let (tx, rx) = smol::channel::unbounded::<GlobalStateManagementMessage>();
     let game_loop = GameLoop::new(10, 20, tx.clone());
 
     let mut backend = TuiBackend::builder()
+        .clear()
         .enable_alt_screen()
         .enable_raw_mode()
         .hide_cursor()
         .finish()
         .unwrap();
+    backend.finalize();
 
     let doc = Document::new("@index");
     let mut builder = Runtime::builder(doc, &backend)
