@@ -17,8 +17,8 @@ use crate::core::{
 };
 
 const GLYPH_WIDTH: u16 = 2;
-const MOVE_TICK_DURATION: u64 = 200;
-const FALL_TICK_DURATION: u64 = 200;
+const MOVE_TICK_DURATION: u64 = 100;
+const FALL_TICK_DURATION: u64 = 100;
 
 #[derive(State)]
 pub(crate) struct GameArenaComponentState {

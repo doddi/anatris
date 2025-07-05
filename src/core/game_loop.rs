@@ -208,8 +208,19 @@ impl GameLoop {
             .enumerate()
             .filter(|(offset, present)| {
                 let x = offset % width;
-                let cube_position_on_arena = self.position.x + x;
-                **present && cube_position_on_arena == 0
+                let y = offset / width;
+                let position_on_arena = Position {
+                    x: self.position.x + x,
+                    y: self.position.y + y,
+                };
+                if (**present) {
+                    if (position_on_arena.x == 0) {
+                        return true; // Block is at the left edge of the arena
+                    } else if self.arena[(position_on_arena.y * self.arena_size.x) + position_on_arena.x - 1].is_some() {
+                        return true; // Block is blocked by another block
+                    }
+                }
+                return false;
             })
             .count()
             == 0
@@ -225,8 +236,22 @@ impl GameLoop {
             .enumerate()
             .filter(|(offset, present)| {
                 let x = offset % width;
-                let cube_position_on_arena = self.position.x + x;
-                **present && (cube_position_on_arena + 1) >= self.arena_size.x
+                let y = offset / width;
+                let position_on_arena = Position {
+                    x: self.position.x + x,
+                    y: self.position.y + y,
+                };
+                if (**present) {
+                    if (position_on_arena.x + 1) >= self.arena_size.x {
+                        return true; // Block is at the right edge of the arena
+                    }
+                    else if self.arena[(position_on_arena.y * self.arena_size.x) + position_on_arena.x + 1].is_some() {
+                        return true; // Block is blocked by another block
+                    }
+                    return false;
+
+                }
+                return false;
             })
             .count()
             == 0
