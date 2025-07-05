@@ -196,7 +196,19 @@ impl GameLoop {
     }
 
     fn handle_rotate(&mut self) {
-        self.piece.rotate();
+        let (shape, width) = self.piece.get_next_rotation_chars();
+        if shape
+            .iter()
+            .enumerate()
+            .filter(|(offset, present)| {
+                let x = self.position.x + offset % width;
+                let y = self.position.y + offset / width;
+                let array_pos = (self.arena_size.x * y) + x;
+                **present && (x >= self.arena_size.x || y >= self.arena_size.y || self.arena[array_pos].is_some())
+            })
+            .count() == 0 {
+            self.piece.rotate();
+        }
     }
 
     fn handle_drop(&mut self) {}

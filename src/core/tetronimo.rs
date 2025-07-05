@@ -35,7 +35,7 @@ enum TetronimoRotation {
 }
 
 impl TetronimoRotation {
-    fn clockwise(&self) -> TetronimoRotation {
+    fn next_rotation(&self) -> TetronimoRotation {
         match self {
             TetronimoRotation::North => TetronimoRotation::East,
             TetronimoRotation::East => TetronimoRotation::South,
@@ -107,45 +107,45 @@ impl Tetronimo {
         }
     }
 
-    pub(crate) fn get_chars(&self) -> (&[bool], usize) {
-        match self.shape {
-            TetronimoShape::IShape => match self.rotation {
+    fn get_shape_with_rotation(shape: &TetronimoShape, rotation: &TetronimoRotation) -> (&'static[bool], usize) {
+        match shape {
+            TetronimoShape::IShape => match rotation {
                 TetronimoRotation::North => (&I_UP, 1),
                 TetronimoRotation::East => (&I_RIGHT, 4),
                 TetronimoRotation::South => (&I_UP, 1),
                 TetronimoRotation::West => (&I_RIGHT, 4),
             },
-            TetronimoShape::JShape => match self.rotation {
+            TetronimoShape::JShape => match rotation {
                 TetronimoRotation::North => (&J_UP, 3),
                 TetronimoRotation::East => (&J_RIGHT, 2),
                 TetronimoRotation::South => (&J_DOWN, 3),
                 TetronimoRotation::West => (&J_LEFT, 2),
             },
-            TetronimoShape::LShape => match self.rotation {
+            TetronimoShape::LShape => match rotation {
                 TetronimoRotation::North => (&L_UP, 3),
                 TetronimoRotation::East => (&L_RIGHT, 2),
                 TetronimoRotation::South => (&L_DOWN, 3),
                 TetronimoRotation::West => (&L_LEFT, 2),
             },
-            TetronimoShape::OShape => match self.rotation {
+            TetronimoShape::OShape => match rotation {
                 TetronimoRotation::North => (&O_UP, 2),
                 TetronimoRotation::East => (&O_UP, 2),
                 TetronimoRotation::South => (&O_UP, 2),
                 TetronimoRotation::West => (&O_UP, 2),
             },
-            TetronimoShape::SShape => match self.rotation {
+            TetronimoShape::SShape => match rotation {
                 TetronimoRotation::North => (&S_UP, 3),
                 TetronimoRotation::East => (&S_RIGHT, 2),
                 TetronimoRotation::South => (&S_UP, 3),
                 TetronimoRotation::West => (&S_RIGHT, 2),
             },
-            TetronimoShape::TShape => match self.rotation {
+            TetronimoShape::TShape => match rotation {
                 TetronimoRotation::North => (&T_UP, 3),
                 TetronimoRotation::East => (&T_RIGHT, 2),
                 TetronimoRotation::South => (&T_DOWN, 3),
                 TetronimoRotation::West => (&T_LEFT, 2),
             },
-            TetronimoShape::ZShape => match self.rotation {
+            TetronimoShape::ZShape => match rotation {
                 TetronimoRotation::North => (&Z_UP, 3),
                 TetronimoRotation::East => (&Z_RIGHT, 2),
                 TetronimoRotation::South => (&Z_UP, 3),
@@ -154,7 +154,15 @@ impl Tetronimo {
         }
     }
 
+    pub(crate) fn get_chars(&self) -> (&[bool], usize) {
+        Self::get_shape_with_rotation(&self.shape, &self.rotation)
+    }
+
     pub(crate) fn rotate(&mut self) {
-        self.rotation = self.rotation.clockwise();
+        self.rotation = self.rotation.next_rotation();
+    }
+
+    pub (crate) fn get_next_rotation_chars(&self) -> (&[bool], usize) {
+        Self::get_shape_with_rotation(&self.shape, &self.rotation.next_rotation())
     }
 }
