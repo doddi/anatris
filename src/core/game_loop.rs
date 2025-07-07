@@ -204,9 +204,14 @@ impl GameLoop {
                 let x = self.position.x + offset % width;
                 let y = self.position.y + offset / width;
                 let array_pos = (self.arena_size.x * y) + x;
-                **present && (x >= self.arena_size.x || y >= self.arena_size.y || self.arena[array_pos].is_some())
+                **present
+                    && (x >= self.arena_size.x
+                        || y >= self.arena_size.y
+                        || self.arena[array_pos].is_some())
             })
-            .count() == 0 {
+            .count()
+            == 0
+        {
             self.piece.rotate();
         }
     }
@@ -225,14 +230,17 @@ impl GameLoop {
                     x: self.position.x + x,
                     y: self.position.y + y,
                 };
-                if (**present) {
-                    if (position_on_arena.x == 0) {
+                if **present {
+                    if position_on_arena.x == 0 {
                         return true; // Block is at the left edge of the arena
-                    } else if self.arena[(position_on_arena.y * self.arena_size.x) + position_on_arena.x - 1].is_some() {
+                    } else if self.arena
+                        [(position_on_arena.y * self.arena_size.x) + position_on_arena.x - 1]
+                        .is_some()
+                    {
                         return true; // Block is blocked by another block
                     }
                 }
-                return false;
+                false
             })
             .count()
             == 0
@@ -253,17 +261,18 @@ impl GameLoop {
                     x: self.position.x + x,
                     y: self.position.y + y,
                 };
-                if (**present) {
+                if **present {
                     if (position_on_arena.x + 1) >= self.arena_size.x {
                         return true; // Block is at the right edge of the arena
-                    }
-                    else if self.arena[(position_on_arena.y * self.arena_size.x) + position_on_arena.x + 1].is_some() {
+                    } else if self.arena
+                        [(position_on_arena.y * self.arena_size.x) + position_on_arena.x + 1]
+                        .is_some()
+                    {
                         return true; // Block is blocked by another block
                     }
                     return false;
-
                 }
-                return false;
+                false
             })
             .count()
             == 0
